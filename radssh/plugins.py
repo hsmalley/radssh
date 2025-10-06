@@ -100,8 +100,12 @@ except Exception:
 
     def _unique_module_name(path: str) -> str:
         # Create a deterministic-ish but safe module name from the path
-        # Use abs(hash(...)) to avoid negative names and keep it filename stable
-        return f"radssh_plugin_{abs(hash(os.path.abspath(path)))}"
+        # Include basename for better debugging while keeping uniqueness
+        basename = os.path.basename(path).replace('.py', '').replace('-', '_')
+        # Clean basename to be a valid Python identifier
+        basename = ''.join(c if c.isalnum() or c == '_' else '_' for c in basename)
+        path_hash = abs(hash(os.path.abspath(path)))
+        return f"radssh_plugin_{basename}_{path_hash}"
 
 
     def load_plugin(src):

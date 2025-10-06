@@ -16,6 +16,12 @@ All notable changes to this project will be documented in this file.
 
 - `Cluster` gained a `start_threads` parameter (default True) to opt out of background thread startup for tests and tooling.
 
+### Improved
+
+- Plugin loader module naming now includes the plugin filename for better debugging experience.
+
+- Comprehensive test coverage for plugin loader failure cases including non-existent files, syntax errors, and import failures.
+
 ### Notes
 
 - The `radssh.plugins` module intentionally exposes a minimal registry API (`register`, `get`, `iter_plugins`, `get_plugins`, `clear`) and is safe to import during test collection.
