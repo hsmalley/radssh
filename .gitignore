@@ -14,9 +14,15 @@ radssh/plugins
 *.lock
 .venv
 .venv/**
+.venv*
+.venv*/**
+.*cache
+.*cache/**
 .vscode/
 .DS_Store
 .env.local
 .env.production
 .env.development
 .vscode/settings.local.json
+*/__pycache__
+*/__pycache__/**
