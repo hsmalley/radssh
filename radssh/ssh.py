@@ -179,12 +179,13 @@ def mitogen_connection_worker(host, conn, auth, sshconfig={}, router=None):
             hostname=hostname,
             port=port,
             username=username,
-            check_host_keys=False 
+            python_path='python3',
+            check_host_keys='ignore' 
         )
         return MitogenConnection(context)
     except Exception as e:
         logging.getLogger("radssh").error(
-            "Mitogen connection failed for %s: %s", host, e
+            "Mitogen connection failed for %s: %s", host, e, exc_info=True
         )
         return e
 
@@ -484,7 +485,7 @@ class Cluster(object):
             self.dispatcher.submit(mitogen_close_connection, t, k)
         self.dispatcher.wait()
         if self.router:
-            self.router.shutdown(wait=True)
+            self.router.broker.shutdown()
             self.router = None
 
     # Other methods like locate, __iter__, etc. can remain largely the same
