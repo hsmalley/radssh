@@ -80,9 +80,7 @@ class RadSSHConsole(object):
             self.q = queue.Queue(300)
         self.formatter = formatter
         self.quietmode = False
-        self.background_thread = threading.Thread(
-            target=self.console_thread, args=()
-        )
+        self.background_thread = threading.Thread(target=self.console_thread, args=())
         # Use modern threading attributes
         self.background_thread.daemon = True
         self.background_thread.name = "Console Output"

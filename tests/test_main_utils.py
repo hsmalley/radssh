@@ -2,6 +2,7 @@ import threading
 
 # Ensure paramiko has __version_info__ for import-time checks in radssh.__main__
 import paramiko
+
 if not hasattr(paramiko, "__version_info__"):
     try:
         ver = tuple(int(x) for x in paramiko.__version__.split(".")[:2])

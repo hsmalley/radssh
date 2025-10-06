@@ -2,7 +2,9 @@ from radssh.ssh import Cluster, CommandResult
 
 
 class DummyTransport:
-    def __init__(self, active=True, authenticated=True, peer_ip="1.2.3.4", username="user"):
+    def __init__(
+        self, active=True, authenticated=True, peer_ip="1.2.3.4", username="user"
+    ):
         self._active = active
         self._authenticated = authenticated
         self._peer_ip = peer_ip
@@ -24,7 +26,13 @@ class DummyTransport:
 def make_cluster_with_defaults():
     # Minimal hostlist and defaults to construct a Cluster without network activity
     hostlist = [("h1", "1.1.1.1")]
-    defaults = {"output_mode": "off", "ordered_placeholder": "on", "character_encoding": "utf-8", "loglevel": "INFO", "max_threads": 1}
+    defaults = {
+        "output_mode": "off",
+        "ordered_placeholder": "on",
+        "character_encoding": "utf-8",
+        "loglevel": "INFO",
+        "max_threads": 1,
+    }
     # Provide a minimal auth-like object with default_user to avoid AuthManager init
     auth = type("A", (), {"default_user": "test"})()
     c = Cluster(hostlist, auth=auth, defaults=defaults, start_threads=False)
@@ -50,7 +58,7 @@ def test_connection_summary_counts():
         "ready": DummyTransport(active=True, authenticated=True),
         "notauth": DummyTransport(active=True, authenticated=False),
         "notactive": DummyTransport(active=False, authenticated=False),
-        "failed": Exception("conn")
+        "failed": Exception("conn"),
     }
     ready, disabled, failed_auth, failed_connect, dropped = c.connection_summary()
     assert ready >= 0
@@ -61,6 +69,7 @@ def test_exec_command_skipped_for_non_transport():
     # exec_command should return CommandResult with Skipped when t is not a Transport
     # Call exec_command with non-Transport argument (e.g., None) through direct import
     from radssh.ssh import exec_command
+
     r = exec_command("h", None, "cmd", None, None)
     assert isinstance(r, CommandResult)
     assert r.status.startswith("*** Skipped") or r.status == "*** Skipped ***"

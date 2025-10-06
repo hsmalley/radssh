@@ -28,6 +28,7 @@ def lookup(arg):
 # Simple star command example: plain function will be wrapped by StarCommand
 # by the core loader during discovery.
 
+
 def my_star_handler(cluster, logdir, cmdline, *args):
     """Example *command"""
     print("sample_plugin: my_star_handler called")

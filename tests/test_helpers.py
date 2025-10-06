@@ -24,8 +24,8 @@ def test_chunker_grouping_and_iteration():
 
 
 def test_commandresult_repr_and_attrs():
-    cr = CommandResult(command='echo hi', status='ok', return_code=0)
+    cr = CommandResult(command="echo hi", status="ok", return_code=0)
     # __repr__ expects status and command present
     r = repr(cr)
-    assert 'ok' in r
-    assert 'echo hi' in r
+    assert "ok" in r
+    assert "echo hi" in r

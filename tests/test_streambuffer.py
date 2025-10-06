@@ -25,4 +25,3 @@ def test_streambuffer_presplit_and_pull():
     b2 = StreamBuffer(None, tag="T2:", blocksize=10, presplit=False, encoding="utf-8")
     b2.push("abc")
     assert b2.pull() == b"abc"
-

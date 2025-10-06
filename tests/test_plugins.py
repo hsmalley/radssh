@@ -1,8 +1,8 @@
 """Tests for the radssh.plugins module and filesystem discovery."""
+
 from __future__ import annotations
 
 import os
-import tempfile
 
 import radssh.plugins as plugins
 
@@ -17,6 +17,7 @@ def test_registry_register_and_clear():
 
 def test_load_plugin_from_registry():
     plugins.clear()
+
     class Dummy:
         pass
 
@@ -53,6 +54,7 @@ def test_discover_and_load_sample_plugin(tmp_path):
 def test_load_nonexistent_plugin():
     """Test that loading a non-existent plugin raises ImportError."""
     import pytest
+
     with pytest.raises(ImportError, match="Plugin not found"):
         plugins.load_plugin("/path/to/nonexistent.py")
 
@@ -60,6 +62,7 @@ def test_load_nonexistent_plugin():
 def test_load_non_python_file(tmp_path):
     """Test that loading a non-.py file raises RuntimeError."""
     import pytest
+
     not_python = tmp_path / "not_python.txt"
     not_python.write_text("This is not Python")
     with pytest.raises(RuntimeError, match="RadSSH Plugins must be .py files"):
@@ -87,6 +90,7 @@ def test_discover_plugin_with_syntax_error(tmp_path):
 def test_load_plugin_with_import_error(tmp_path):
     """Test that load_plugin propagates import errors from malformed plugins."""
     import pytest
+
     bad_plugin = tmp_path / "import_error.py"
     bad_plugin.write_text("import nonexistent_module")
 
@@ -110,6 +114,6 @@ star_commands = {'*test': my_handler}
     assert "*test" in mod.star_commands
     # Should be wrapped in StarCommand
     wrapped_cmd = mod.star_commands["*test"]
-    assert hasattr(wrapped_cmd, "func")
+    assert hasattr(wrapped_cmd, "handler")  # core_plugins.StarCommand uses 'handler'
     assert hasattr(wrapped_cmd, "help_text")
     assert callable(wrapped_cmd)

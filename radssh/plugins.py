@@ -73,10 +73,8 @@ try:
     # of the codebase. We still keep the in-memory registry functions above.
     StarCommand = _CoreStarCommand
 
-
     def discover_plugin(src):
         return _core_discover_plugin(src)
-
 
     def load_plugin(src):
         # If a plugin has been registered in the in-memory registry, return it
@@ -95,18 +93,15 @@ except Exception:
     import importlib.util
     import importlib.machinery
     import os
-    import uuid
-
 
     def _unique_module_name(path: str) -> str:
         # Create a deterministic-ish but safe module name from the path
         # Include basename for better debugging while keeping uniqueness
-        basename = os.path.basename(path).replace('.py', '').replace('-', '_')
+        basename = os.path.basename(path).replace(".py", "").replace("-", "_")
         # Clean basename to be a valid Python identifier
-        basename = ''.join(c if c.isalnum() or c == '_' else '_' for c in basename)
+        basename = "".join(c if c.isalnum() or c == "_" else "_" for c in basename)
         path_hash = abs(hash(os.path.abspath(path)))
         return f"radssh_plugin_{basename}_{path_hash}"
-
 
     def load_plugin(src):
         """Load a plugin module from a path or return a registered object.
@@ -157,7 +152,6 @@ except Exception:
                 pass
 
         return module
-
 
     def discover_plugin(src):
         """Discover plugin entrypoints by attempting to load the source file.

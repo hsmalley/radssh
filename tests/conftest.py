@@ -4,6 +4,7 @@ Provides a `cluster_factory` fixture that returns a callable to construct
 `radssh.ssh.Cluster` instances with `start_threads=False` by default so tests
 can create clusters without spawning background threads.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -29,7 +30,6 @@ def cluster_factory():
         return Cluster(hosts=hosts, **kwargs)
 
     return _factory
-
 
 
 @pytest.fixture(autouse=True)

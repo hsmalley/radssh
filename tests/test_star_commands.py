@@ -12,7 +12,9 @@ from radssh import star_commands  # noqa: E402
 class DummyCluster:
     def __init__(self):
         self.output_mode = "stream"
-        self.quota = type("Q", (), {"time_limit": 0, "byte_limit": 0, "line_limit": 0})()
+        self.quota = type(
+            "Q", (), {"time_limit": 0, "byte_limit": 0, "line_limit": 0}
+        )()
         self.defaults = {"character_encoding": "utf-8"}
         self.user_vars = {}
         self.console = type("C", (), {"q": [], "join": lambda self, *a, **k: None})()

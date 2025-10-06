@@ -11,7 +11,15 @@ import queue
 class StreamBuffer(object):
     """StreamBuffer Class"""
 
-    def __init__(self, queue=None, tag=None, delimiter=b"\n", blocksize=1024, presplit=False, encoding="utf-8"):
+    def __init__(
+        self,
+        queue=None,
+        tag=None,
+        delimiter=b"\n",
+        blocksize=1024,
+        presplit=False,
+        encoding="utf-8",
+    ):
         self.tag = tag if tag else "%d" % id(self)
         self.queue = queue
         self.delimiter = delimiter
@@ -42,13 +50,15 @@ class StreamBuffer(object):
                 flush_needed = True
 
         if self.queue and flush_needed:
-            pending = self.buffer[self.marker:]
+            pending = self.buffer[self.marker :]
             if self.pre_split:
                 lines = pending.split(self.delimiter)
                 for x in lines[0:-1]:
                     self.line_count += 1
                     try:
-                        self.queue.put_nowait((self.tag, x.decode(self.encoding, "replace")))
+                        self.queue.put_nowait(
+                            (self.tag, x.decode(self.encoding, "replace"))
+                        )
                     except queue.Full:
                         self.discards += 1
                 self.marker = len(self.buffer) - len(lines[-1])
@@ -56,7 +66,9 @@ class StreamBuffer(object):
                 pos = pending.rfind(self.delimiter)
                 if pos >= 0:
                     try:
-                        self.queue.put_nowait((self.tag, pending[:pos].decode(self.encoding, "replace")))
+                        self.queue.put_nowait(
+                            (self.tag, pending[:pos].decode(self.encoding, "replace"))
+                        )
                     except queue.Full:
                         self.discards += 1
                     self.line_count += pending[:pos].count(self.delimiter)
@@ -65,7 +77,7 @@ class StreamBuffer(object):
     def pull(self, size=0):
         if not self.active and self.pull_marker == len(self.buffer):
             raise EOFError
-        data = self.buffer[self.pull_marker:]
+        data = self.buffer[self.pull_marker :]
         # If size is zero, return all remaining data
         if size == 0:
             self.pull_marker = len(self.buffer)
@@ -81,7 +93,10 @@ class StreamBuffer(object):
 
     def rewind(self, position=0):
         if position < 0 or position > len(self.buffer):
-            raise ValueError("Invalid rewind position %d: only range [0:%d] exists" % (position, len(self.buffer)))
+            raise ValueError(
+                "Invalid rewind position %d: only range [0:%d] exists"
+                % (position, len(self.buffer))
+            )
         self.pull_marker = position
 
     def close(self):
@@ -90,7 +105,7 @@ class StreamBuffer(object):
         if self.queue and len(self.buffer) > self.marker:
             self.push(b"")
             if len(self.buffer) > self.marker:
-                pending = self.buffer[self.marker:]
+                pending = self.buffer[self.marker :]
                 try:
                     self.queue.put((self.tag, pending.decode(self.encoding, "replace")))
                 except queue.Full:
@@ -108,4 +123,3 @@ class StreamBuffer(object):
 
     def __str__(self):
         return "<%s-%s>" % (self.__class__.__name__, self.tag)
-
