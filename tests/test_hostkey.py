@@ -1,5 +1,3 @@
-import os
-
 from radssh.hostkey import CodeMap, printable_fingerprint, HostKeyVerifier, verify_mode
 
 

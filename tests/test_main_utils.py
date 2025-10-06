@@ -1,4 +1,3 @@
-import os
 import threading
 
 # Ensure paramiko has __version_info__ for import-time checks in radssh.__main__

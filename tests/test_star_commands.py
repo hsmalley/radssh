@@ -1,9 +1,6 @@
 import io
 import sys
-
-# Provide a minimal radssh.plugins.StarCommand shim so importing star_commands works in tests
 import types
-import sys
 
 # Create a proper module object for radssh.plugins so relative import works
 plugin_mod = types.ModuleType("radssh.plugins")
@@ -19,7 +16,7 @@ class StarCommand:
 plugin_mod.StarCommand = StarCommand
 sys.modules["radssh.plugins"] = plugin_mod
 
-from radssh import star_commands
+from radssh import star_commands  # noqa: E402 (intentional plugin injection before import)
 
 
 class DummyCluster:
