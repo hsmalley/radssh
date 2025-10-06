@@ -9,7 +9,7 @@
 # included with the distribution as file LICENSE.txt
 #
 
-'''
+"""
 RadSSH Plugins
 ==============
 
@@ -84,7 +84,7 @@ transfers, connections and disconnections, enables & disables, etc. It can also
 create, update, read, delete files in the log directory. It can also create a new
 Cluster object and pass it back as a return value, which will cause RadSSH to
 shift context to the new cluster for the remainder of the session.
-'''
+"""
 
 import imp
 import os
@@ -92,28 +92,39 @@ import warnings
 
 
 class StarCommand(object):
-    '''
+    """
     StarCommand Class
     Allow offloading of special help/synopsis text handling from a basic
     callable \*command handler callable function. If no synopsis or help text
     is provided, the function docstring will be used. Help can be auto-invoked
     if help flags are discovered on the command line or if the parameter count
     is out of range.
-    '''
-    def __init__(self, handler, synopsis=None, help_text=None, auto_help=True, min_args=0, max_args=None, version=None, tab_completion=None):
+    """
+
+    def __init__(
+        self,
+        handler,
+        synopsis=None,
+        help_text=None,
+        auto_help=True,
+        min_args=0,
+        max_args=None,
+        version=None,
+        tab_completion=None,
+    ):
         self.handler = handler
         if synopsis:
             self.synopsis = synopsis
         elif handler.__doc__:
             self.synopsis = handler.__doc__
         else:
-            self.synopsis = 'Synopsis not provided and no docstring available'
+            self.synopsis = "Synopsis not provided and no docstring available"
         if help_text:
             self.help_text = help_text
         elif handler.__doc__:
             self.help_text = handler.__doc__
         else:
-            self.synopsis = 'Help not provided and no docstring available'
+            self.synopsis = "Help not provided and no docstring available"
         self.auto_help = auto_help
         self.min_args = min_args
         self.max_args = max_args
@@ -122,19 +133,19 @@ class StarCommand(object):
 
     def __call__(self, cluster, logdir, cmd, *args):
         # Bypass calling if auto-help or if argument count out of range
-        if (self.auto_help and ('--help' in args or '-h' in args or '-?' in args)):
+        if self.auto_help and ("--help" in args or "-h" in args or "-?" in args):
             print(self.help_text)
         elif len(args) < self.min_args:
             if self.max_args == self.min_args:
-                print(cmd.split()[0], 'takes exactly', self.min_args, 'arguments')
+                print(cmd.split()[0], "takes exactly", self.min_args, "arguments")
             else:
-                print(cmd.split()[0], 'takes at least', self.min_args, 'arguments')
+                print(cmd.split()[0], "takes at least", self.min_args, "arguments")
             print(self.help_text)
-        elif (self.max_args is not None and len(args) > self.max_args):
+        elif self.max_args is not None and len(args) > self.max_args:
             if self.max_args:
-                print(cmd.split()[0], 'takes at most', self.max_args, 'arguments')
+                print(cmd.split()[0], "takes at most", self.max_args, "arguments")
             else:
-                print(cmd.split()[0], 'takes no arguments')
+                print(cmd.split()[0], "takes no arguments")
             print(self.help_text)
         else:
             # Otherwise call the handler
@@ -142,19 +153,19 @@ class StarCommand(object):
 
 
 def load_plugin(src):
-    '''
+    """
     Load a RadSSH Plugin module
     Returns successfully imported module object
-    '''
+    """
     plugin_dir = os.path.dirname(os.path.abspath(os.path.expanduser(src)))
     src = os.path.basename(src)
-    if not src.endswith('.py'):
-        raise RuntimeError('RadSSH Plugins must be .py files [%s]' % src)
+    if not src.endswith(".py"):
+        raise RuntimeError("RadSSH Plugins must be .py files [%s]" % src)
     module = src[:-3]
     handle = imp.find_module(module, [plugin_dir])
     plugin = imp.load_module(module, *handle)
     # Patch in StarCommand class wrapper for plain *command functions
-    if hasattr(plugin, 'star_commands'):
+    if hasattr(plugin, "star_commands"):
         for name, cmd in plugin.star_commands.items():
             if not isinstance(cmd, StarCommand):
                 plugin.star_commands[name] = StarCommand(cmd)
@@ -162,22 +173,26 @@ def load_plugin(src):
 
 
 def discover_plugin(src):
-    '''
+    """
     Attempts to load a module. If successful, returns tuple (init, lookup, star_commands).
     If an exception occurs, translate to RuntimeWarning, and return (None, None, {}).
-    '''
+    """
     star_commands = {}
     lookup = None
     init = None
     try:
         plugin = load_plugin(src)
     except Exception as e:
-        warnings.warn(RuntimeWarning('Could not load plugin [%s]' % os.path.basename(src), repr(e)))
+        warnings.warn(
+            RuntimeWarning(
+                "Could not load plugin [%s]" % os.path.basename(src), repr(e)
+            )
+        )
         return (None, None, {})
-    if hasattr(plugin, 'lookup'):
+    if hasattr(plugin, "lookup"):
         lookup = plugin.lookup
-    if hasattr(plugin, 'init'):
+    if hasattr(plugin, "init"):
         init = plugin.init
-    if hasattr(plugin, 'star_commands'):
+    if hasattr(plugin, "star_commands"):
         star_commands = plugin.star_commands
     return (init, lookup, star_commands)

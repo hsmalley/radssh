@@ -9,9 +9,9 @@
 # included with the distribution as file LICENSE.txt
 #
 
-'''
+"""
 Dispatcher Module
-'''
+"""
 
 import threading
 from itertools import count
@@ -22,19 +22,22 @@ import queue
 
 
 class UnfinishedJobs(Exception):
-    '''Exception raised by async_results() iterator when queue is stalled'''
+    """Exception raised by async_results() iterator when queue is stalled"""
+
     def __init__(self, remaining, total):
         Exception.__init__(self, remaining, total)
-        self.message = 'Waiting on %d of %d results' % (remaining, total)
+        self.message = "Waiting on %d of %d results" % (remaining, total)
 
 
 class JobSummary(object):
-    '''Dispatcher info returned from a submitted Job'''
+    """Dispatcher info returned from a submitted Job"""
+
     def __init__(self, completed, job_id, result, start_time=None, **kwargs):
         self.job_id = job_id
         self.result = result
         self.completed = completed
-        self.thread_name = threading.currentThread().getName()
+        # Use current_thread() and name attribute for modern threading API
+        self.thread_name = threading.current_thread().name
         self.end_time = time.time()
         # if we don't have a start_time, then default it to end_time (instant)
         self.start_time = start_time if start_time else self.end_time
@@ -43,13 +46,21 @@ class JobSummary(object):
 
     def __str__(self):
         if self.completed:
-            return 'Completed [%s] (Run by %s in %g seconds)' % (self.result, self.thread_name, (self.end_time - self.start_time))
+            return "Completed [%s] (Run by %s in %g seconds)" % (
+                self.result,
+                self.thread_name,
+                (self.end_time - self.start_time),
+            )
         else:
-            return 'Failed [%r] (Run by %s in %g seconds)' % (self.result, self.thread_name, (self.end_time - self.start_time))
+            return "Failed [%r] (Run by %s in %g seconds)" % (
+                self.result,
+                self.thread_name,
+                (self.end_time - self.start_time),
+            )
 
 
 def generic_dispatch(inQ, outQ):
-    '''General purpose dispatch thread'''
+    """General purpose dispatch thread"""
     while True:
         start_time = 0
         try:
@@ -72,7 +83,8 @@ def generic_dispatch(inQ, outQ):
 
 
 class Dispatcher(object):
-    '''Generic threaded queue job dispatcher'''
+    """Generic threaded queue job dispatcher"""
+
     def __init__(self, outQ=None, threadpool_size=100, dynamic_expansion=False):
         self.inQ = queue.Queue()
         self.outQ = outQ
@@ -91,13 +103,13 @@ class Dispatcher(object):
             self.start_threads(threadpool_size)
 
     def start_threads(self, num=1):
-        '''Grow the threadpool by the requested size, up to limit threadpool_size, set in __init__()'''
+        """Grow the threadpool by the requested size, up to limit threadpool_size, set in __init__()"""
         if self.terminated.is_set():
             return
         while num > 0 and len(self.workers) < self.threadpool_size:
             thr = threading.Thread(target=generic_dispatch, args=(self.inQ, self.outQ))
-            thr.setDaemon(True)
-            thr.setName('%s-%d' % ('dispatcher', next(self.thread_sequence)))
+            thr.daemon = True
+            thr.name = "%s-%d" % ("dispatcher", next(self.thread_sequence))
             thr.start()
             self.workers.append(thr)
             num -= 1
@@ -107,9 +119,9 @@ class Dispatcher(object):
 
     def submit(self, handler, *args, **kwargs):
         if not callable(handler):
-            raise TypeError('Cannot use %r as dispatch handler' % handler)
+            raise TypeError("Cannot use %r as dispatch handler" % handler)
         if self.terminated.is_set():
-            raise RuntimeError('Dispatcher has been terminated: Unable to submit calls')
+            raise RuntimeError("Dispatcher has been terminated: Unable to submit calls")
         if self.dynamic and self.inQ.size() > 1:
             # Start a few more worker threads if we are backlogged
             self.start_threads(3)
@@ -124,7 +136,7 @@ class Dispatcher(object):
             self.requests = 0
 
     def async_results(self, timeout=3):
-        '''Poll for results - can be used as iterator'''
+        """Poll for results - can be used as iterator"""
         if not self.outQ or self.terminated.is_set():
             raise StopIteration
         while self.inQ.unfinished_tasks:
@@ -144,7 +156,7 @@ class Dispatcher(object):
                 break
 
     def terminate(self):
-        '''Clenup a Dispatcher as best as we can'''
+        """Clenup a Dispatcher as best as we can"""
         # Should only be called when a dispatched thread call goes so wrong that
         # it is unable to self-poll and return/timeout on its own, as in flaky connection
         # requests. exec_command calls can check the user_abort event when socket reads

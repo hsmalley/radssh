@@ -1,22 +1,12 @@
 import io
 import sys
-import types
 
-# Create a proper module object for radssh.plugins so relative import works
-plugin_mod = types.ModuleType("radssh.plugins")
-class StarCommand:
-    def __init__(self, func, **kwargs):
-        self.func = func
-        self.help_text = getattr(func, "__doc__", "")
-        self.version = None
-        self.synopsis = getattr(func, "__doc__", "")
-    def __call__(self, *args, **kwargs):
-        return self.func(*args, **kwargs)
+import radssh.plugins as plugins
 
-plugin_mod.StarCommand = StarCommand
-sys.modules["radssh.plugins"] = plugin_mod
-
-from radssh import star_commands  # noqa: E402 (intentional plugin injection before import)
+# Use the real registry during tests. Clear any previous state to keep tests
+# isolated, then import the module under test.
+plugins.clear()
+from radssh import star_commands  # noqa: E402
 
 
 class DummyCluster:
@@ -61,3 +51,8 @@ def test_call_unknown_command_prints_help(capsys=None):
     # calling unknown star command should return None (help printed)
     res = star_commands.call(c, None, "*nonexistent")
     assert res is None
+
+
+# Cleanup registry after module tests to avoid leaking state into other tests
+def teardown_module(module):
+    plugins.clear()

@@ -9,12 +9,12 @@
 # included with the distribution as file LICENSE.txt
 #
 
-'''Reauthentication - Provide a 2nd chance connect/auth without needing
-to exit and re-run the shell'''
+"""Reauthentication - Provide a 2nd chance connect/auth without needing
+to exit and re-run the shell"""
 
 
 def star_auth(cluster, logdir, cmd, *args):
-    '''Attempt another auth to any unauthenticated nodes'''
+    """Attempt another auth to any unauthenticated nodes"""
     if len(args) == 0:
         user = None
     else:
@@ -22,4 +22,4 @@ def star_auth(cluster, logdir, cmd, *args):
     cluster.reauth(user)
 
 
-star_commands = {'*auth': star_auth}
+star_commands = {"*auth": star_auth}

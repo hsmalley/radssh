@@ -9,7 +9,7 @@
 # included with the distribution as file LICENSE.txt
 #
 
-'''IP Lookup Plugin'''
+"""IP Lookup Plugin"""
 
 import netaddr
 
@@ -18,7 +18,7 @@ import netaddr
 
 
 def lookup(name):
-    '''Handle IPNetwork and IPGlob (and IPAddress) notation'''
+    """Handle IPNetwork and IPGlob (and IPAddress) notation"""
     try:
         ip = netaddr.IPAddress(name)
         return __generator([ip])
@@ -41,6 +41,6 @@ def lookup(name):
 
 
 def __generator(x):
-    '''Pass back 3-tuple (label, host, socket) - socket is None to defer actual connection til later'''
+    """Pass back 3-tuple (label, host, socket) - socket is None to defer actual connection til later"""
     for item in x:
         yield (item, str(item), None)

@@ -9,7 +9,7 @@
 # included with the distribution as file LICENSE.txt
 #
 
-'''Silly, simple, stupid example of a plugin that adds a *command'''
+"""Silly, simple, stupid example of a plugin that adds a *command"""
 
 # Define a python function that takes the following parameters:
 #    cluster - gives access to cluster connection list, results, etc.
@@ -19,16 +19,16 @@
 
 
 def star_bork(cluster, logdir, cmd, *args):
-    '''Swedish Chef *command from plugin'''
+    """Swedish Chef *command from plugin"""
     # *commands can read/update the cluster information, create
     # their own logfiles in the logdir, leverage the cluster to run jobs,
     # pull information from external sources, or print messages on console
     # or any combination.
     # This simple example only prints static text back to the console
-    print('Bork bork bork')
+    print("Bork bork bork")
 
 
 # Shell picks up the available *commands from each plugin
 # by looking for this named dictionary: keys are the text
 # to match, and values are the functions to call...
-star_commands = {'*chef': star_bork}
+star_commands = {"*chef": star_bork}

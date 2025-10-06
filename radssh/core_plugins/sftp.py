@@ -9,7 +9,7 @@
 # included with the distribution as file LICENSE.txt
 #
 
-'''
+"""
 SFTP plugin for RadSSH
 ======================
 
@@ -32,7 +32,7 @@ structured in an easy to use fashion.
     not locally. File is retrieved into a temporary file, then the existing
     cluster.sftp() call is used to put the file. File attributes for file
     permissions and user/group ownership is attempted to be preserved.
-'''
+"""
 
 import os
 import stat
@@ -41,14 +41,11 @@ import tempfile
 from radssh.plugins import StarCommand
 
 # Add a settings dict so user can override plugin rutime parameters
-settings = {
-    'temp_dir': '/tmp',
-    'script_exec': 'bash -c "%s"'
-}
+settings = {"temp_dir": "/tmp", "script_exec": 'bash -c "%s"'}
 
 
 def sftp(cluster, logdir, cmd, *args):
-    '''SFTP put a local file on cluster nodes'''
+    """SFTP put a local file on cluster nodes"""
     src = args[0]
     if len(args) > 1:
         dst = args[1]
@@ -58,35 +55,35 @@ def sftp(cluster, logdir, cmd, *args):
 
 
 def script_file_runner(cluster, logdir, cmd, *args):
-    '''Push a local script file out to nodes and run it with optional arguments'''
+    """Push a local script file out to nodes and run it with optional arguments"""
     st = os.stat(args[0])
     if not (st.st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)):
-        raise RuntimeError('Script file %s not executable' % args[0])
+        raise RuntimeError("Script file %s not executable" % args[0])
     srcfile = args[0]
-    dstfile = os.path.join(settings['temp_dir'], os.path.basename(args[0]))
+    dstfile = os.path.join(settings["temp_dir"], os.path.basename(args[0]))
     sftp(cluster, logdir, cmd, srcfile, dstfile)
-    remote_cmd = '%s %s' % (dstfile, ' '.join(args[1:]))
-    if settings['script_exec']:
-        remote_cmd = settings['script_exec'] % remote_cmd
+    remote_cmd = "%s %s" % (dstfile, " ".join(args[1:]))
+    if settings["script_exec"]:
+        remote_cmd = settings["script_exec"] % remote_cmd
     cluster.run_command(remote_cmd)
     if logdir:
         cluster.log_result(logdir)
 
 
 def propagate_file(cluster, logdir, cmd, *args):
-    '''Use SFTP to replicate a file on one remote node to all other nodes'''
+    """Use SFTP to replicate a file on one remote node to all other nodes"""
     if len(args) != 1:
-        print('Usage: *propagate host:/path/to/file')
+        print("Usage: *propagate host:/path/to/file")
         return
-    host, path = args[0].split(':', 1)
+    host, path = args[0].split(":", 1)
     source_host = cluster.locate(host)
     if not source_host:
-        print('Host [%s] does not appear to be part of current cluster' % host)
+        print("Host [%s] does not appear to be part of current cluster" % host)
         return
     # Get a temp filename (and fd, but close that immediately, we just want the name)
     fd, tempname = tempfile.mkstemp()
     os.close(fd)
-    print('Fetching master copy of %s from [%s]' % (path, source_host))
+    print("Fetching master copy of %s from [%s]" % (path, source_host))
     # Here, we don't care if the source node is enabled or not, grab the file content regardless
     t = cluster.connections[source_host]
     s = t.open_sftp_client()
@@ -94,7 +91,7 @@ def propagate_file(cluster, logdir, cmd, *args):
     attrs = s.stat(path)
     s.close()
     # Now use cluster.sftp directly to push out the file, including the saved attrs
-    print('Pushing master copy to remote hosts...')
+    print("Pushing master copy to remote hosts...")
     cluster.sftp(tempname, path, attrs)
     os.remove(tempname)
 
@@ -108,7 +105,7 @@ def custom_completer(completer, buffer, lead_in, text, state):
 
 
 star_commands = {
-    '*sftp': StarCommand(sftp, tab_completion=custom_completer),
-    '*run': StarCommand(script_file_runner, tab_completion=custom_completer),
-    '*propagate': propagate_file
+    "*sftp": StarCommand(sftp, tab_completion=custom_completer),
+    "*run": StarCommand(script_file_runner, tab_completion=custom_completer),
+    "*propagate": propagate_file,
 }

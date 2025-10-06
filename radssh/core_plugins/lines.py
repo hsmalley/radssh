@@ -9,7 +9,7 @@
 # included with the distribution as file LICENSE.txt
 #
 
-'''Breakdown of unique lines (or words) from last command output'''
+"""Breakdown of unique lines (or words) from last command output"""
 
 
 class Histogram(object):
@@ -25,37 +25,43 @@ class Histogram(object):
     def __iter__(self):
         values = [(v, k) for k, v in self.d.items()]
         for count, value in sorted(values, reverse=True):
-            yield(count, value)
+            yield (count, value)
 
 
 def lines(cluster, logdir, cmd, *args):
-    '''Print line content and count of repeated lines from last command output'''
+    """Print line content and count of repeated lines from last command output"""
     h = Histogram()
     for host in cluster.connections.keys():
         job = cluster.last_result.get(host)
         if job:
             res = job.result
-            h.add(res.stdout.split(b'\n'))
+            h.add(res.stdout.split(b"\n"))
     for count, line in h:
-        print('%6d - %s' % (count, line.decode(cluster.defaults['character_encoding'], 'replace')))
+        print(
+            "%6d - %s"
+            % (count, line.decode(cluster.defaults["character_encoding"], "replace"))
+        )
 
 
 def words(cluster, logdir, cmd, *args):
-    '''Print line content and count of repeated words from last command output'''
+    """Print line content and count of repeated words from last command output"""
     h = Histogram()
     for host in cluster.connections.keys():
         job = cluster.last_result.get(host)
         if job:
             res = job.result
-            for line in res.stdout.split(b'\n'):
+            for line in res.stdout.split(b"\n"):
                 h.add(line.split())
     for count, line in h:
-        print('%6d - %s' % (count, line.decode(cluster.defaults['character_encoding'], 'replace')))
+        print(
+            "%6d - %s"
+            % (count, line.decode(cluster.defaults["character_encoding"], "replace"))
+        )
 
 
-star_commands = {'*lines': lines, '*words': words}
+star_commands = {"*lines": lines, "*words": words}
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     h = Histogram()
-    h.add(['a', 'b', 'a', 'c', 'a', 'a', 'A', 'boogie', 'woogie'])
+    h.add(["a", "b", "a", "c", "a", "a", "A", "boogie", "woogie"])
     print(list(h))

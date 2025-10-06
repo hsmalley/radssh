@@ -9,7 +9,7 @@
 # included with the distribution as file LICENSE.txt
 #
 
-'''Plugin to provide VCR-like capabilities for command lines'''
+"""Plugin to provide VCR-like capabilities for command lines"""
 
 import os
 import atexit
@@ -24,9 +24,9 @@ def init(**kwargs):
     # VCR needs access ot the parent shell for playback
     global shell
     try:
-        shell = kwargs['shell']
+        shell = kwargs["shell"]
     except KeyError:
-        raise RuntimeError('VCR: Unable to initialize', 'RadSSH shell not accessible')
+        raise RuntimeError("VCR: Unable to initialize", "RadSSH shell not accessible")
 
 
 class Recorder(object):
@@ -44,10 +44,10 @@ class Recorder(object):
             self.data.append(x)
 
     def save(self):
-        with open(self.filename, 'a') as f:
-            f.write('\n'.join(self.data))
+        with open(self.filename, "a") as f:
+            f.write("\n".join(self.data))
         if self.vars:
-            with open(self.filename + '.vars', 'w') as f:
+            with open(self.filename + ".vars", "w") as f:
                 f.write(pprint.pformat(self.vars))
 
 
@@ -55,15 +55,15 @@ def command_listener(cmd):
     global vcr
     if vcr:
         args = cmd.split()
-        if args and not args[0] in star_commands:
+        if args and args[0] not in star_commands:
             vcr.feed(cmd)
 
 
 def eject():
-    '''Register this as an atexit function to save off vcr session when shell terminates'''
+    """Register this as an atexit function to save off vcr session when shell terminates"""
     global vcr
     if vcr:
-        print('Auto-saving VCR contents')
+        print("Auto-saving VCR contents")
         vcr.save()
 
 
@@ -71,13 +71,16 @@ atexit.register(eject)
 
 
 def record(cluster, logdir, cmd, *args):
-    '''Begin recording of session commands for later playback'''
+    """Begin recording of session commands for later playback"""
     global vcr
     if not args:
         if vcr:
-            print('Stop Recording')
+            print("Stop Recording")
             vcr.save()
-            print('Finished recording saved to %s (%d lines)' % (vcr.filename, len(vcr.data)))
+            print(
+                "Finished recording saved to %s (%d lines)"
+                % (vcr.filename, len(vcr.data))
+            )
             vcr = None
         else:
             print('Use "*record <filename>" to begin recording')
@@ -89,41 +92,43 @@ def record(cluster, logdir, cmd, *args):
     if vcr:
         # Save off old recording session
         vcr.save()
-        print('Saved existing recording to %s (%d lines)' % (vcr.filename, len(vcr.data)))
+        print(
+            "Saved existing recording to %s (%d lines)" % (vcr.filename, len(vcr.data))
+        )
     vcr = Recorder(filename, cluster.user_vars)
-    print('Started new recording to %s' % filename)
+    print("Started new recording to %s" % filename)
 
 
 def pause(cluster, logdir, cmd, *args):
-    '''Temporary suspend/resume toggle for VCR-like recording'''
+    """Temporary suspend/resume toggle for VCR-like recording"""
     global vcr
     if not vcr:
-        print('VCR not running. Did you put in a tape?')
+        print("VCR not running. Did you put in a tape?")
         return
     vcr.pause()
     if vcr.active:
-        print('VCR unpaused')
+        print("VCR unpaused")
     else:
-        print('VCR paused (%d lines in buffer)' % len(vcr.data))
+        print("VCR paused (%d lines in buffer)" % len(vcr.data))
 
 
 def playback(cluster, logdir, cmd, *args):
-    '''Playback scripted commands from *record save file, or other script file'''
+    """Playback scripted commands from *record save file, or other script file"""
     if len(args) != 1:
         print('Try "*playback <filename>"')
         return
     filename = args[0]
-    if os.path.exists(filename + '.vars'):
-        print('Loading saved variables...')
+    if os.path.exists(filename + ".vars"):
+        print("Loading saved variables...")
         try:
-            with open(filename + '.vars', 'r') as var_file:
+            with open(filename + ".vars", "r") as var_file:
                 cluster.user_vars.update(eval(var_file.read()))
         except Exception as e:
-            print('Failed to load variables from [%s]' % filename + '.vars')
-            print('%r' % e)
+            print("Failed to load variables from [%s]" % filename + ".vars")
+            print("%r" % e)
     with open(filename) as f:
         shell(cluster, logdir, f, cluster.defaults)
-    print('*** Playback of %s complete ***' % filename)
+    print("*** Playback of %s complete ***" % filename)
 
 
-star_commands = {'*record': record, '*pause': pause, '*playback': playback}
+star_commands = {"*record": record, "*pause": pause, "*playback": playback}
