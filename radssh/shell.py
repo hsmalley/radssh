@@ -544,13 +544,28 @@ def radssh_shell_main():
 
     if ready == 1 and disabled + failed_auth + failed_connect + dropped == 0:
         # Cluster size of one - check if auto_tty is set
-        if defaults["auto_tty"] == "on" and "star_tty" in loaded_plugins:
-            print("Auto-invoking *tty for a cluster size of 1")
-            loaded_plugins["star_tty"].settings["prompt_delay"] = "0.0"
-            star.call(cluster, logdir, "*tty")
-            # cluster.console.join()
-            cluster.close_connections()
-            raise SystemExit("Session complete")
+        if defaults.get("auto_tty", "off") == "on":
+            # Ensure the star_tty plugin is loaded and has expected attrs
+            if "star_tty" in loaded_plugins:
+                plugin = loaded_plugins.get("star_tty")
+                try:
+                    # set prompt delay if plugin exposes settings dict
+                    if hasattr(plugin, "settings") and isinstance(
+                        plugin.settings, dict
+                    ):
+                        plugin.settings["prompt_delay"] = "0.0"
+                except Exception:
+                    # Ignore any plugin-specific errors and continue
+                    pass
+                try:
+                    print("Auto-invoking *tty for a cluster size of 1")
+                    star.call(cluster, logdir, "*tty")
+                except Exception:
+                    # plugin call failed; report and continue to close
+                    logger.exception("Auto *tty invocation failed")
+                # cluster.console.join()
+                cluster.close_connections()
+                raise SystemExit("Session complete")
 
     # Command line history support
     if defaults.get("historyfile"):

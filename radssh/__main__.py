@@ -32,12 +32,40 @@ import threading
 import netaddr
 import radssh
 import paramiko
+import re
 
-# Paramiko 2.0 switched dependency from PyCrypto to cryptography.io
-if paramiko.__version_info__ >= (2, 0):
-    import cryptography as crypto_module
+
+def _version_tuple_from_str(vstr: str) -> tuple[int, ...]:
+    """Return a simple numeric version tuple from a version string.
+
+    Examples:
+      '2.11.0' -> (2, 11, 0)
+      '2.0' -> (2, 0)
+      '2.0a1' -> (2, 0, 1)
+    Non-numeric parts are ignored after the numeric segments.
+    """
+    if not vstr:
+        return (0,)
+    m = re.match(r"^(\d+)(?:\.(\d+))?(?:\.(\d+))?", vstr)
+    if not m:
+        return (0,)
+    parts = [int(g) for g in m.groups() if g is not None]
+    return tuple(parts)
+
+
+# Paramiko 2.0 switched dependency from PyCrypto to cryptography
+_paramiko_ver = getattr(paramiko, "__version__", None)
+if _version_tuple_from_str(_paramiko_ver) >= (2,):
+    try:
+        import cryptography as crypto_module  # type: ignore
+    except Exception:
+        # Fallback: if cryptography is not available, leave crypto_module unset
+        crypto_module = None  # type: ignore
 else:
-    import Crypto as crypto_module
+    try:
+        import Crypto as crypto_module  # type: ignore
+    except Exception:
+        crypto_module = None  # type: ignore
 
 
 def open_file(name):
