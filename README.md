@@ -1,13 +1,30 @@
-RadSSH
-======
+# RadSSH
 
-RadSSH is a Python package that is built with Paramiko.
+[![CI](https://github.com/hsmalley/radssh/workflows/CI/badge.svg)](https://github.com/hsmalley/radssh/actions/workflows/ci.yml)
+[![Code Quality](https://github.com/hsmalley/radssh/workflows/Code%20Quality/badge.svg)](https://github.com/hsmalley/radssh/actions/workflows/code-quality.yml)
+[![Security](https://github.com/hsmalley/radssh/workflows/Security%20Scan/badge.svg)](https://github.com/hsmalley/radssh/actions/workflows/security.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-BSD-green.svg)](LICENSE.txt)
+[![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-Documentation for the project is hosted on ReadTheDocs, at http://radssh.readthedocs.org
+RadSSH is a Python package built with Paramiko that enables you to execute commands across multiple SSH hosts simultaneously.
 
-Frequently Asked Questions: https://github.com/radssh/radssh/blob/master/FAQ.md
+## Features
 
-RadSSH is installable via **pip**, using ``pip install radssh``.
+- Execute commands on dozens or hundreds of hosts simultaneously
+- Interactive shell interface with familiar SSH syntax
+- Plugin system for extensibility
+- High-level API for building custom applications
+- Modern Python 3.12+ support with type hints
+- Comprehensive test suite and CI/CD
+
+## Installation
+
+```bash
+pip install radssh
+```
+
+## Quick Start
 
 ----
 

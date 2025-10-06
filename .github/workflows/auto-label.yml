@@ -1,0 +1,106 @@
+name: Auto Label
+
+on:
+  issues:
+    types: [opened, reopened]
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: Label new issues
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const labels = [];
+            
+            // Auto-label based on title
+            if (issue.title.toLowerCase().includes('bug')) {
+              labels.push('bug');
+            }
+            if (issue.title.toLowerCase().includes('feature')) {
+              labels.push('enhancement');
+            }
+            if (issue.title.toLowerCase().includes('doc')) {
+              labels.push('documentation');
+            }
+            if (issue.title.toLowerCase().includes('security')) {
+              labels.push('security');
+            }
+            
+            // Auto-label based on body content
+            const body = issue.body.toLowerCase();
+            if (body.includes('security') || body.includes('vulnerability')) {
+              labels.push('security');
+            }
+            if (body.includes('performance')) {
+              labels.push('performance');
+            }
+            if (body.includes('plugin')) {
+              labels.push('plugin');
+            }
+            
+            // Add needs-triage to all new issues
+            labels.push('needs-triage');
+            
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: labels
+              });
+            }
+      
+      - name: Label new pull requests
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const labels = [];
+            
+            // Auto-label based on title
+            if (pr.title.toLowerCase().includes('fix')) {
+              labels.push('bug');
+            }
+            if (pr.title.toLowerCase().includes('feat')) {
+              labels.push('enhancement');
+            }
+            if (pr.title.toLowerCase().includes('doc')) {
+              labels.push('documentation');
+            }
+            if (pr.title.toLowerCase().includes('deps')) {
+              labels.push('dependencies');
+            }
+            if (pr.title.toLowerCase().includes('ci')) {
+              labels.push('ci');
+            }
+            
+            // Check if PR is from dependabot
+            if (pr.user.login === 'dependabot[bot]') {
+              labels.push('dependencies');
+              labels.push('automated');
+            }
+            
+            // Check for draft status
+            if (pr.draft) {
+              labels.push('work-in-progress');
+            }
+            
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: labels
+              });
+            }

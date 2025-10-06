@@ -1,0 +1,108 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+    paths:
+      - 'radssh/**'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - 'README.md'
+      - 'CHANGELOG.md'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write  # For trusted publishing to PyPI
+
+env:
+  COLUMNS: 120
+
+jobs:
+  build:
+    name: Build distribution packages
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Fetch full history for proper versioning
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+      
+      - name: Build packages
+        run: python -m build
+      
+      - name: Check packages
+        run: python -m twine check dist/*
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-packages
+          path: dist/
+          retention-days: 7
+  
+#   github-release:
+#     name: Create GitHub Release
+#     runs-on: ubuntu-latest
+#     needs: build
+#     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+#     steps:
+#       - uses: actions/checkout@v4
+      
+#       - name: Download build artifacts
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: python-packages
+#           path: dist/
+      
+#       - name: Create GitHub Release
+#         uses: softprops/action-gh-release@v2
+#         with:
+#           files: dist/*
+#           draft: false
+#           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+#           generate_release_notes: true
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+#   pypi-publish:
+#     name: Publish to PyPI
+#     runs-on: ubuntu-latest
+#     needs: build
+#     if: github.event_name == 'release' && github.event.action == 'published'
+#     environment: pypi
+    
+#     steps:
+#       - name: Download build artifacts
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: python-packages
+#           path: dist/
+      
+#       - name: Publish to PyPI
+#         uses: pypa/gh-action-pypi-publish@release/v1
+#         with:
+#           # Use trusted publishing - no API tokens needed
+#           # Configure at https://pypi.org/manage/account/publishing/
+#           verbose: true

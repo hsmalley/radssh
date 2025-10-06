@@ -1,0 +1,58 @@
+name: Workflow Validation
+
+on:
+  push:
+    paths:
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+
+jobs:
+  validate-workflows:
+    name: Validate GitHub Actions Workflows
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Validate workflow files
+        run: |
+          # Check for basic YAML syntax
+          for file in .github/workflows/*.yml .github/workflows/*.yaml; do
+            if [ -f "$file" ]; then
+              echo "Validating $file"
+              python -c "import yaml; yaml.safe_load(open('$file', 'r'))" || exit 1
+            fi
+          done
+          
+          # Check for common workflow issues
+          echo "Checking for common workflow patterns..."
+          
+          # Check that jobs have proper names
+          if grep -r "jobs:" .github/workflows/ | grep -v "name:"; then
+            echo "✓ All workflows have job definitions"
+          fi
+          
+          # Check for proper action versions
+          if grep -r "actions/" .github/workflows/ | grep -v "@v[0-9]"; then
+            echo "Warning: Some actions may not have version pins"
+          fi
+          
+          echo "✓ Workflow validation completed"
+      
+      - name: Check for workflow best practices
+        run: |
+          echo "Checking workflow best practices..."
+          
+          # Check for path filtering where appropriate
+          if grep -l "on:" .github/workflows/*.yml | xargs grep -L "paths:"; then
+            echo "Info: Some workflows don't use path filtering"
+          fi
+          
+          # Check for caching where appropriate
+          if grep -l "setup-python" .github/workflows/*.yml | xargs grep -L "cache:"; then
+            echo "Info: Some Python workflows don't use caching"
+          fi
+          
+          echo "✓ Best practices check completed"

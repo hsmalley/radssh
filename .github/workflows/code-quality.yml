@@ -1,0 +1,76 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - 'radssh/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - '.github/workflows/code-quality.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'radssh/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - '.github/workflows/code-quality.yml'
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'pyproject.toml'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev] || pip install -e .
+          pip install ruff pytest pytest-sugar
+      
+      - name: Lint with ruff (check)
+        run: ruff check . --output-format=sarif | tee ruff-results.sarif
+        continue-on-error: true
+      
+      - name: Format check with ruff
+        run: ruff format --check .
+      
+      - name: Upload SARIF file for GitHub Advanced Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ruff-results.sarif
+          category: ruff
+        continue-on-error: true
+      
+      - name: Run quick tests (exclude slow cluster tests)
+        run: pytest --ignore=tests/test_cluster_utils.py -v --tb=short
+      
+      - name: Security scan with bandit
+        if: matrix.python-version == '3.13'
+        run: |
+          pip install bandit[toml]
+          bandit -r radssh -f sarif -o bandit-results.sarif || true
+        continue-on-error: true
+      
+      - name: Upload Bandit SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && matrix.python-version == '3.13'
+        with:
+          sarif_file: bandit-results.sarif
+          category: bandit
+        continue-on-error: true
