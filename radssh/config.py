@@ -9,8 +9,7 @@
 # included with the distribution as file LICENSE.txt
 #
 
-'''Configuration file module'''
-
+"""Configuration file module"""
 
 import sys
 import os
@@ -18,17 +17,17 @@ import warnings
 from io import StringIO
 
 
-system_settings_file = '/etc/radssh_config'
+system_settings_file = "/etc/radssh_config"
 obsoleted = {
-    'verbose': 'Use loglevel=[CRITICAL|ERROR|WARNING|INFO|DEBUG] instead',
-    'paramiko_log_level': 'Use loglevel for controlling RadSSH and Paramiko logging',
-    'hostkey.verify': 'Set StrictHostKeyChecking in standard SSH Config file (~/.ssh/config)',
-    'hostkey.known_hosts': 'Set UserKnownHostsFile in standard SSH Config file (~/.ssh/config)',
-    'ssh-identity': 'Set IdentityFile in standard SSH Config file (~/.ssh/config)',
-    'ssh-agent': 'Set IdentitiesOnly in standard SSH Config file (~/.ssh/config)'
+    "verbose": "Use loglevel=[CRITICAL|ERROR|WARNING|INFO|DEBUG] instead",
+    "paramiko_log_level": "Use loglevel for controlling RadSSH and Paramiko logging",
+    "hostkey.verify": "Set StrictHostKeyChecking in standard SSH Config file (~/.ssh/config)",
+    "hostkey.known_hosts": "Set UserKnownHostsFile in standard SSH Config file (~/.ssh/config)",
+    "ssh-identity": "Set IdentityFile in standard SSH Config file (~/.ssh/config)",
+    "ssh-agent": "Set IdentitiesOnly in standard SSH Config file (~/.ssh/config)",
 }
 
-default_config = '''
+default_config = """
 # Package supplied configuration settings
 ### All lines starting with # are comments
 ### All other lines should be of the form keyword=value
@@ -133,50 +132,64 @@ try_auth_none=off
 # Additional settings for plugins (that support settings) can be
 # set in this configuration, using the syntax plugin.PLUGIN_NAME.KEYWORD=value
 plugin.star_tty.prompt_delay=5
-'''
+"""
 
 
 def load_settings_file(f):
-    '''Load settings from a file-like object, returning a dict'''
+    """Load settings from a file-like object, returning a dict"""
     settings = {}
     for line_number, line in enumerate(f, 1):
         line = line.strip()
-        if not line or line.startswith('#'):
+        if not line or line.startswith("#"):
             continue
-        if '=' in line:
-            setting = line.split('=', 1)
+        if "=" in line:
+            setting = line.split("=", 1)
             settings[setting[0].strip()] = setting[1].strip()
         else:
-            if hasattr(f, 'name'):
-                warnings.warn_explicit('Invalid line in settings file [%s]' % line, RuntimeWarning, f.name, line_number)
+            if hasattr(f, "name"):
+                warnings.warn_explicit(
+                    "Invalid line in settings file [%s]" % line,
+                    RuntimeWarning,
+                    f.name,
+                    line_number,
+                )
             else:
-                warnings.warn(RuntimeWarning('Invalid line in default settings (Line %d) "%s"' % (line_number, line)))
+                warnings.warn(
+                    RuntimeWarning(
+                        'Invalid line in default settings (Line %d) "%s"'
+                        % (line_number, line)
+                    )
+                )
     return settings
 
 
 def obsoleted_check(d, filename=None):
-    '''Check settings dict against the obsoleted options'''
+    """Check settings dict against the obsoleted options"""
     for k in obsoleted:
         if k in d:
-            warnings.warn('OBSOLETE: [%s] found in %s is ignored.\n\t%s' % (k, filename, obsoleted[k]))
+            warnings.warn(
+                "OBSOLETE: [%s] found in %s is ignored.\n\t%s"
+                % (k, filename, obsoleted[k])
+            )
             d.pop(k)
 
 
 def load_default_settings():
-    '''Load just the default settings, ignoring system and user settings files'''
+    """Load just the default settings, ignoring system and user settings files"""
     # Start with the default_config settings from the module
     defaults = StringIO(default_config)
     settings = load_settings_file(defaults)
     # Fill default username and character encodings from derived values
     # not in the default_config template string.
-    if 'username' not in settings:
-        settings['username'] = os.environ.get(
-            'SSH_USER', os.environ.get('USER', os.environ.get('USERNAME', 'default')))
-    if 'character_encoding' not in settings:
+    if "username" not in settings:
+        settings["username"] = os.environ.get(
+            "SSH_USER", os.environ.get("USER", os.environ.get("USERNAME", "default"))
+        )
+    if "character_encoding" not in settings:
         if sys.stdout.encoding:
-            settings['character_encoding'] = sys.stdout.encoding
+            settings["character_encoding"] = sys.stdout.encoding
         else:
-            settings['character_encoding'] = 'UTF-8'
+            settings["character_encoding"] = "UTF-8"
     return settings
 
 
@@ -184,24 +197,31 @@ def command_line_settings(cmdline_args=[], permitted=True):
     '''Load settings from command line args of the form "--keyword=value"'''
     settings = {}
     for arg in list(cmdline_args):
-        if arg.startswith('--'):
+        if arg.startswith("--"):
             try:
-                k, v = arg.split('=', 1)
+                k, v = arg.split("=", 1)
                 # Only apply command line option if user.settings is still enabled
                 if permitted:
                     commandline_setting = {k[2:]: v}
-                    obsoleted_check(commandline_setting, 'command line argument')
+                    obsoleted_check(commandline_setting, "command line argument")
                     settings.update(commandline_setting)
                 else:
-                    warnings.warn(RuntimeWarning('Command line option: %s (ignored) - User settings disabled by administrator' % (arg)))
+                    warnings.warn(
+                        RuntimeWarning(
+                            "Command line option: %s (ignored) - User settings disabled by administrator"
+                            % (arg)
+                        )
+                    )
             except ValueError:
-                warnings.warn(RuntimeWarning('Invalid command line option: %s (ignored)' % (arg)))
+                warnings.warn(
+                    RuntimeWarning("Invalid command line option: %s (ignored)" % (arg))
+                )
             cmdline_args.remove(arg)
     return settings
 
 
 def load_settings(cmdline_args=None):
-    '''Load a full settings dict from defaults, system, user, and command line settings'''
+    """Load a full settings dict from defaults, system, user, and command line settings"""
     settings = load_default_settings()
     # Also load the system-wide settings
     if os.path.exists(system_settings_file):
@@ -210,14 +230,14 @@ def load_settings(cmdline_args=None):
             obsoleted_check(system_settings, system_settings_file)
             settings.update(system_settings)
     # If admin has not disabled user settings, load them and finally the command line settings
-    if settings.get('user.settings'):
-        user_settings_file = os.path.expanduser(settings.get('user.settings'))
+    if settings.get("user.settings"):
+        user_settings_file = os.path.expanduser(settings.get("user.settings"))
         if os.path.exists(user_settings_file):
             with open(user_settings_file) as f:
                 user_settings = load_settings_file(f)
                 obsoleted_check(user_settings, user_settings_file)
                 settings.update(user_settings)
-    if cmdline_args and settings.get('user.settings'):
+    if cmdline_args and settings.get("user.settings"):
         if isinstance(cmdline_args, list):
             cmdline_dict = command_line_settings(cmdline_args)
             settings.update(cmdline_dict)
@@ -227,15 +247,15 @@ def load_settings(cmdline_args=None):
 
 
 def main():
-    '''Print the RadSSH default settings as reference'''
-    for x in default_config.split('\n'):
-        if x.startswith('#'):
-            print('##%s' % str(x))
+    """Print the RadSSH default settings as reference"""
+    for x in default_config.split("\n"):
+        if x.startswith("#"):
+            print("##%s" % str(x))
         elif not x.strip():
             print()
         else:
-            print('# %s' % str(x))
+            print("# %s" % str(x))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

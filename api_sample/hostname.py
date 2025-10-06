@@ -1,4 +1,4 @@
-'''
+"""
 NetTest Module
 ==============
 
@@ -15,7 +15,8 @@ results (in addition to streaming stdout/stderr to the console).
 This can be used as a template for developing customized scripts
 that leverage RadSSH, if the general purpose radssh.shell module
 is too interactive.
-'''
+"""
+
 import sys
 import socket
 import syslog
@@ -25,21 +26,21 @@ from radssh.console import RadSSHConsole
 from radssh.authmgr import AuthManager
 
 if len(sys.argv) < 2:
-    print('Usage: %s [--password=<password> ] host1 [...]' % sys.argv[0])
+    print("Usage: %s [--password=<password> ] host1 [...]" % sys.argv[0])
     sys.exit(1)
 
 # Setup stuff that the shell module would
-password = '********'
+password = "********"
 socket.setdefaulttimeout(10)
 
 hosts = sys.argv[1:]
 
-if hosts[0].startswith('--password='):
+if hosts[0].startswith("--password="):
     password = hosts[0][11:]
     hosts = hosts[1:]
 
 # Create an AuthManager to do login with password only
-login = AuthManager('root', default_password=password)
+login = AuthManager("root", default_password=password)
 
 # Create a Console for streaming the results of running command output
 # This can be suppressed via the console.quiet() call
@@ -49,20 +50,20 @@ console = RadSSHConsole()
 # Leave the 2nd element as None to let RadSSH do the socket connections
 connections = [(x, None) for x in hosts]
 
-print('\nConnecting...')
+print("\nConnecting...")
 C = Cluster(connections, login, console=console)
 for host, status in C.status():
-    print('%14s : %s' % (str(host), status))
+    print("%14s : %s" % (str(host), status))
 
 # Cluster connections and authentications established
 # Use the run_command to execute just about any command line
-print('\nRunning a command')
-C.run_command('hostname')
+print("\nRunning a command")
+C.run_command("hostname")
 
 # All hosts have finished (or were skipped)
 # We can access the cluster last_result to post-process the results
 
-print('\nCommand post-processing')
+print("\nCommand post-processing")
 for host, job in C.last_result.items():
     if job.completed and job.result.return_code == 0:
         print(job.result.stdout)
@@ -70,5 +71,7 @@ for host, job in C.last_result.items():
         print(host, C.connections[host])
         print(job, job.result.status, job.result.stderr)
 
-        syslog.syslog(syslog.LOG_ERR, '%s -%s' % (host, C.connections[host]))
-        syslog.syslog(syslog.LOG_ERR, '%s, %s, %s' % (job, job.result.status, job.result.stderr))
+        syslog.syslog(syslog.LOG_ERR, "%s -%s" % (host, C.connections[host]))
+        syslog.syslog(
+            syslog.LOG_ERR, "%s, %s, %s" % (job, job.result.status, job.result.stderr)
+        )

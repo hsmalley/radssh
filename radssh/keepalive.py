@@ -9,12 +9,12 @@
 # included with the distribution as file LICENSE.txt
 #
 
-'''
+"""
 RadSSH Keepalive Module
 Extension to Paramiko to perform keepalive global-requests with
 response, so we can tell if the remote server is responding, instead
 of just padding out the local Send-Q buffer with unsendable data.
-'''
+"""
 
 import threading
 import struct
@@ -23,15 +23,16 @@ import paramiko
 
 
 class ServerNotResponding(Exception):
-    '''
+    """
     Raised when (threshold) keepalive messages in a row fail to get
     any response, allowing better detection of severed connection.
-    '''
+    """
+
     pass
 
 
 class KeepAlive(object):
-    '''
+    """
     Transport global_request() is not able to handle the scenario that
     KeepAlive test requires. The "wait" parameter, if True, will include
     in the request "want reply", but blocks the calling thread trying
@@ -55,7 +56,8 @@ class KeepAlive(object):
     is a SSH_MSG_REQUEST_FAILURE. There is nothing special about the
     string "keepalive@openssh.com". All that is needed is that the server
     sends some response, even if it is a failure, to set the Event.
-    '''
+    """
+
     def __init__(self, transport, threshold=5):
         self.transport = transport
         self.threshold = threshold
@@ -64,8 +66,8 @@ class KeepAlive(object):
 
     def ping(self):
         m = paramiko.Message()
-        m.add_byte(struct.pack('b', paramiko.common.MSG_GLOBAL_REQUEST))
-        m.add_string('keepalive@openssh.com')
+        m.add_byte(struct.pack("b", paramiko.common.MSG_GLOBAL_REQUEST))
+        m.add_string("keepalive@openssh.com")
         m.add_boolean(True)
         self.transport._send_user_message(m)
         self.transport.completion_event.wait(0.1)

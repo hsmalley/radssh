@@ -9,7 +9,7 @@
 # included with the distribution as file LICENSE.txt
 #
 
-'''
+"""
 RadSSH Console
 ==============
 Handle output text streamed to a Queue to present on terminal.
@@ -18,7 +18,8 @@ Messages are expected to be tagged as to their origin, expected
 to be a pair (label, stderr), where label is typically a hostname
 and stderr is a boolean indicating if the message content came from
 stderr (highlight) or not.
-'''
+"""
+
 import sys
 import threading
 import getpass
@@ -42,30 +43,36 @@ def user_password(prompt):
 
 
 def monochrome(tag, text):
-    '''Basic Formatter for plain (monochrome) output'''
+    """Basic Formatter for plain (monochrome) output"""
     label, hilight = tag
-    for line in text.split('\n'):
-        yield '[%s] %s\n' % (label, line)
+    for line in text.split("\n"):
+        yield "[%s] %s\n" % (label, line)
 
 
 def colorizer(tag, text):
-    '''Basic ANSI colorized output - host hash value map to 7-color palette, stderr bold'''
+    """Basic ANSI colorized output - host hash value map to 7-color palette, stderr bold"""
     label, hilight = tag
     color = 1 + hash(label) % 7
-    for line in text.split('\n'):
+    for line in text.split("\n"):
         if hilight:
-            yield '\033[30;4%dm[%s]\033[0;1;3%dm %s\033[0m\n' % (color, label, color, line)
+            yield "\033[30;4%dm[%s]\033[0;1;3%dm %s\033[0m\n" % (
+                color,
+                label,
+                color,
+                line,
+            )
         else:
-            yield '\033[3%dm[%s] %s\033[0m\n' % (color, label, line)
+            yield "\033[3%dm[%s] %s\033[0m\n" % (color, label, line)
 
 
 class RadSSHConsole(object):
-    '''
+    """
     Combine a Queue object with a daemon thread that pulls message
     output from the queue and pretties it up for on screen display.
     When run in a terminal window, uses ANSI escape sequences to
     colorize output, and use the window/tab title for status messages.
-    '''
+    """
+
     def __init__(self, q=None, formatter=colorizer, retain_recent=0):
         if q:
             self.q = q
@@ -73,9 +80,12 @@ class RadSSHConsole(object):
             self.q = queue.Queue(300)
         self.formatter = formatter
         self.quietmode = False
-        self.background_thread = threading.Thread(target=self.console_thread, args=())
-        self.background_thread.setDaemon(True)
-        self.background_thread.setName('Console Output')
+        self.background_thread = threading.Thread(
+            target=self.console_thread, args=()
+        )
+        # Use modern threading attributes
+        self.background_thread.daemon = True
+        self.background_thread.name = "Console Output"
         self.background_thread.start()
 
         def limit_deque():
@@ -85,7 +95,7 @@ class RadSSHConsole(object):
         self.recent_history = defaultdict(limit_deque)
 
     def quiet(self, enable=True):
-        '''Set (or clear) console quietmode. Returns prior setting.'''
+        """Set (or clear) console quietmode. Returns prior setting."""
         # Wait for queue to drain before taking effect
         self.q.join()
         retval = self.quietmode
@@ -93,10 +103,10 @@ class RadSSHConsole(object):
         return retval
 
     def status(self, message):
-        '''Set console (titlebar) status message'''
+        """Set console (titlebar) status message"""
         if not self.quietmode:
             # Jam into window title bar
-            print("\x1b]2;%s\x07" % message, end='')
+            print("\x1b]2;%s\x07" % message, end="")
             sys.stdout.flush()
 
     def join(self, clear_history=False):
@@ -104,27 +114,27 @@ class RadSSHConsole(object):
         if clear_history:
             self.recent_history.clear()
 
-    def message(self, message, label='CONSOLE'):
-        '''Main thread can submit CONSOLE messages directly through instance'''
+    def message(self, message, label="CONSOLE"):
+        """Main thread can submit CONSOLE messages directly through instance"""
         self.q.put(((label, True), str(message)))
 
     def progress(self, s):
-        '''For progress-bar like output; no newlines'''
+        """For progress-bar like output; no newlines"""
         if not self.quietmode:
             with console_mutex:
-                print(s, end='')
+                print(s, end="")
                 sys.stdout.flush()
 
     def replay_recent(self, label):
-        '''Output the recent lines sent tagged from "label" - Used for Ctrl-C handler'''
+        """Output the recent lines sent tagged from "label" - Used for Ctrl-C handler"""
         if not self.retain_recent:
             return
         self.join()
         for line in self.recent_history.get(str(label), []):
-            print('STALLED: ' + line, end='')
+            print("STALLED: " + line, end="")
 
     def console_thread(self):
-        '''Background-able thread to pull from outputQ and format and print to screen'''
+        """Background-able thread to pull from outputQ and format and print to screen"""
         while True:
             try:
                 tag, text = self.q.get()
@@ -132,24 +142,24 @@ class RadSSHConsole(object):
                     with console_mutex:
                         # Tag is tuple of (label, stderr_flag)
                         for line in self.formatter(tag, text):
-                            print(line, end='')
+                            print(line, end="")
                             if self.retain_recent:
                                 self.recent_history[str(tag[0])].append(line)
                         sys.stdout.flush()
             except Exception as e:
-                print('Console Thread Exception: %s\n' % str(e))
-                print('(%s): %s\n' % (tag, text))
+                print("Console Thread Exception: %s\n" % str(e))
+                print("(%s): %s\n" % (tag, text))
             finally:
                 self.q.task_done()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     c = RadSSHConsole()
-    c.message('Begin Console Output')
-    c.status('Title Bar Set')
+    c.message("Begin Console Output")
+    c.status("Title Bar Set")
     for x in range(20):
-        c.q.put((('Loop', False), str(x)))
-    print('Loop complete\n', end='')
+        c.q.put((("Loop", False), str(x)))
+    print("Loop complete\n", end="")
     c.join()
-    print('Console output complete')
+    print("Console output complete")
     sys.stdout.flush()

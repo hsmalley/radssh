@@ -1,5 +1,8 @@
 name: CI
 
+env:
+  COLUMNS: 120
+
 on:
   push:
     branches: [ main, hwip ]

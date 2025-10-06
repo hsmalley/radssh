@@ -9,7 +9,7 @@
 # included with the distribution as file LICENSE.txt
 #
 
-'''
+"""
 Python wrapper for parallel execution shell
 ===========================================
 
@@ -19,7 +19,7 @@ Usage: ```python -m radssh.shell host [...]```
 
 Will read settings from /etc/radssh_config, and supplement with ~/.radssh_config.
 Settings may also be provided on the command line, using the form --keyword=value.
-'''
+"""
 
 import sys
 import os
@@ -33,35 +33,40 @@ import logging
 from . import ssh
 from . import config
 from .console import RadSSHConsole, monochrome
+
 try:
     from . import star_commands as star
     import radssh.plugins
 except ImportError:
+
     class NullStarCommands(object):
-        '''Use stub if plugins or star_commands can not be loaded'''
+        """Use stub if plugins or star_commands can not be loaded"""
+
         @classmethod
         def call(*args, **kwargs):
-            print('Plugins directory not found - *commands disabled')
+            print("Plugins directory not found - *commands disabled")
+
         star_help = call
         star_info = call
-        commands = {'*help': star_help}
+        commands = {"*help": star_help}
 
     star = NullStarCommands()
 
 
 # Try using colorama when running on Windows
-if sys.platform.startswith('win'):
+if sys.platform.startswith("win"):
     try:
         import colorama
+
         colorama.initialise.init()
     except Exception as e:
-        print('Unable to support ANSI escape sequences via colorama module')
+        print("Unable to support ANSI escape sequences via colorama module")
         print(e)
         sys.exit(1)
 
 # Ensure ~/.ssh directory exists, with sensible permissions
 try:
-    os.mkdir(os.path.expanduser('~/.ssh'), 0o700)
+    os.mkdir(os.path.expanduser("~/.ssh"), 0o700)
 except OSError:
     pass
 
@@ -71,7 +76,7 @@ command_listeners = []
 
 
 def shell(cluster, logdir=None, playbackfile=None, defaults=None):
-    '''Very basic interactive shell'''
+    """Very basic interactive shell"""
     if not defaults:
         defaults = config.load_default_settings()
     while True:
@@ -79,55 +84,68 @@ def shell(cluster, logdir=None, playbackfile=None, defaults=None):
             if playbackfile:
                 try:
                     cmd = next(playbackfile)
-                    print('%s %s' % (defaults['shell.prompt'], cmd.strip()))
+                    print("%s %s" % (defaults["shell.prompt"], cmd.strip()))
                 except StopIteration:
                     return
             else:
                 try:
-                    cmd = input('%s ' % defaults['shell.prompt'])
+                    cmd = input("%s " % defaults["shell.prompt"])
                 except KeyboardInterrupt:
-                    print('\n<Ctrl-C> during input\nUse EOF (<Ctrl-D>) or *exit to exit shell\n')
+                    print(
+                        "\n<Ctrl-C> during input\nUse EOF (<Ctrl-D>) or *exit to exit shell\n"
+                    )
                     continue
                 # Feed command line to any registered listeners from plugins
                 for feed in command_listeners:
                     feed_result = feed(cmd)
                     if feed_result:
-                        if defaults['show_altered_commands'] == 'on':
-                            cluster.console.message('Command modified from "%s" to "%s"' % (cmd, feed_result))
+                        if defaults["show_altered_commands"] == "on":
+                            cluster.console.message(
+                                'Command modified from "%s" to "%s"'
+                                % (cmd, feed_result)
+                            )
                         cmd = str(feed_result)
                 if logdir:
-                    with open(os.path.join(logdir, 'session.commands'), 'a') as f:
-                        f.write('%s\n' % cmd)
+                    with open(os.path.join(logdir, "session.commands"), "a") as f:
+                        f.write("%s\n" % cmd)
             args = cmd.split()
             if len(args) > 0:
-                if os.path.basename(args[0]) == 'sudo' and len(args) > 1:
+                if os.path.basename(args[0]) == "sudo" and len(args) > 1:
                     initial_command = os.path.basename(args[1])
                 else:
                     initial_command = os.path.basename(args[0])
-                if initial_command in defaults['commands.forbidden'].split(','):
-                    print('You really don\'t want to run %s without a TTY, do you?' % initial_command)
+                if initial_command in defaults["commands.forbidden"].split(","):
+                    print(
+                        "You really don't want to run %s without a TTY, do you?"
+                        % initial_command
+                    )
                     continue
-                if initial_command in defaults['commands.restricted'].split(','):
-                    print('STOP! "%s" is listed as a restricted command (Potentially dangerous)' % initial_command)
-                    print('and requires explicit confirmation before running.')
-                    print('Please double check all parameters, just to be sure...')
-                    print('   >>>', cmd)
-                    confirm = input('Enter \'100%\' if completely sure: ')
-                    if confirm != '100%':
+                if initial_command in defaults["commands.restricted"].split(","):
+                    print(
+                        'STOP! "%s" is listed as a restricted command (Potentially dangerous)'
+                        % initial_command
+                    )
+                    print("and requires explicit confirmation before running.")
+                    print("Please double check all parameters, just to be sure...")
+                    print("   >>>", cmd)
+                    confirm = input("Enter '100%' if completely sure: ")
+                    if confirm != "100%":
                         continue
-                if args[0].startswith('#'):
+                if args[0].startswith("#"):
                     # Comment
                     continue
-                if args[0].startswith('*'):
+                if args[0].startswith("*"):
                     ret = star.call(cluster, logdir, cmd)
                     cluster.console.join()
                     if isinstance(ret, ssh.Cluster):
-                        cluster.console.message('Switched cluster from %r to %r' % (cluster, ret))
+                        cluster.console.message(
+                            "Switched cluster from %r to %r" % (cluster, ret)
+                        )
                         cluster = ret
                     continue
                 r = cluster.run_command(cmd)
                 if logdir:
-                    cluster.log_result(logdir, encoding=defaults['character_encoding'])
+                    cluster.log_result(logdir, encoding=defaults["character_encoding"])
                 # Quick summary report, if jobs failed
                 failures = {}
                 completions = []
@@ -143,21 +161,25 @@ def shell(cluster, logdir=None, playbackfile=None, defaults=None):
                     else:
                         failures.setdefault(None, []).append(str(k))
                 if failures:
-                    print('\nSummary of return codes:')
+                    print("\nSummary of return codes:")
                     for k, v in [(0, completions)] + list(failures.items()):
                         if len(v) > 5:
-                            print(k, '\t- (%d hosts)' % len(v))
+                            print(k, "\t- (%d hosts)" % len(v))
                         else:
-                            print(k, '\t-', sorted(v))
+                            print(k, "\t-", sorted(v))
                 if completions:
-                    print('Average completion time for %d hosts: %fs' % (len(completions), (completion_time / len(completions))))
+                    print(
+                        "Average completion time for %d hosts: %fs"
+                        % (len(completions), (completion_time / len(completions)))
+                    )
         except KeyboardInterrupt:
-            print('Ctrl-C during command preparation - command aborted.')
+            print("Ctrl-C during command preparation - command aborted.")
         except EOFError as e:
             print(e)
             break
-    print('Shell exiting')
+    print("Shell exiting")
     cluster.close_connections()
+
 
 ################################################################################
 # Readline/libedit command completion
@@ -165,7 +187,8 @@ def shell(cluster, logdir=None, playbackfile=None, defaults=None):
 
 
 class radssh_tab_handler(object):
-    '''Class wrapper for readline TAB key completion'''
+    """Class wrapper for readline TAB key completion"""
+
     def __init__(self, cluster, star):
         # Need access to the cluster object to get SFTP service
         # for remote path completion, and the star command dictionary
@@ -173,18 +196,18 @@ class radssh_tab_handler(object):
         self.cluster = cluster
         self.star = star
         try:
-            self.using_libedit = ('libedit' in readline.__doc__)
+            self.using_libedit = "libedit" in readline.__doc__
         except TypeError:
             # pyreadline (windows) readline.__doc__ is None (not iterable)
             self.using_libedit = False
         self.completion_choices = []
         readline.set_completer()
         readline.set_completer(self.complete)
-        readline.set_completer_delims(' \t\n/*')
+        readline.set_completer_delims(" \t\n/*")
         if self.using_libedit:
-            readline.parse_and_bind('bind ^I rl_complete')
+            readline.parse_and_bind("bind ^I rl_complete")
         else:
-            readline.parse_and_bind('tab: complete')
+            readline.parse_and_bind("tab: complete")
 
     def complete_star_command(self, lead_in, text, state):
         if state == 0:
@@ -193,7 +216,7 @@ class radssh_tab_handler(object):
             del self.completion_choices[:]
             for choice in self.star.commands.keys():
                 if choice.startswith(lead_in):
-                    self.completion_choices.append(choice + ' ')
+                    self.completion_choices.append(choice + " ")
         # Discrepancy with readline/libedit and handling of leading *
         if self.using_libedit:
             return self.completion_choices[state]
@@ -203,7 +226,7 @@ class radssh_tab_handler(object):
     def complete_executable(self, lead_in, text, state):
         if state == 0:
             del self.completion_choices[:]
-            for path_dir in os.environ['PATH'].split(os.path.pathsep):
+            for path_dir in os.environ["PATH"].split(os.path.pathsep):
                 try:
                     for f in os.listdir(path_dir):
                         try:
@@ -211,7 +234,7 @@ class radssh_tab_handler(object):
                                 continue
                             st = os.stat(os.path.join(path_dir, f))
                             if (st.st_mode & 0o111) and f.startswith(text):
-                                self.completion_choices.append(f + ' ')
+                                self.completion_choices.append(f + " ")
                         except OSError:
                             continue
                 except OSError:
@@ -226,21 +249,21 @@ class radssh_tab_handler(object):
                 if t.is_authenticated():
                     break
             else:
-                print('No authenticated connections')
-                raise RuntimeError('Tab Completion unavailable')
+                print("No authenticated connections")
+                raise RuntimeError("Tab Completion unavailable")
             s = t.open_sftp_client()
             parent = os.path.dirname(lead_in)
             partial = os.path.basename(lead_in)
             if not parent:
-                parent = './'
+                parent = "./"
             for x in s.listdir(parent):
                 if x.startswith(partial):
                     full_path = os.path.join(parent, x)
                     try:
                         # See if target is a directory, and append '/' if it is
                         s.chdir(full_path)
-                        x += '/'
-                        full_path += '/'
+                        x += "/"
+                        full_path += "/"
                     except Exception:
                         pass
                     if self.using_libedit:
@@ -256,14 +279,14 @@ class radssh_tab_handler(object):
             parent = os.path.dirname(lead_in)
             partial = os.path.basename(lead_in)
             if not parent:
-                parent = './'
+                parent = "./"
             for x in os.listdir(parent):
                 if x.startswith(partial):
                     full_path = os.path.join(parent, x)
                     if os.path.isdir(full_path):
                         # See if target is a directory, and append '/' if it is
-                        x += '/'
-                        full_path += '/'
+                        x += "/"
+                        full_path += "/"
                     if self.using_libedit:
                         self.completion_choices.append(full_path)
                     else:
@@ -273,14 +296,16 @@ class radssh_tab_handler(object):
 
     def complete(self, text, state):
         buffer = readline.get_line_buffer()
-        lead_in = buffer[:readline.get_endidx()].split()[-1]
+        lead_in = buffer[: readline.get_endidx()].split()[-1]
         try:
-            if buffer.startswith('*') and ' ' in buffer:
+            if buffer.startswith("*") and " " in buffer:
                 # See if *command has custom tab completion
                 star_command = self.star.commands.get(buffer.split()[0], None)
                 if star_command and star_command.tab_completion:
-                    return star_command.tab_completion(self, buffer, lead_in, text, state)
-            if lead_in.startswith('*'):
+                    return star_command.tab_completion(
+                        self, buffer, lead_in, text, state
+                    )
+            if lead_in.startswith("*"):
                 # User needs help completing *command...
                 return self.complete_star_command(lead_in, text, state)
             else:
@@ -311,44 +336,51 @@ def safe_write_history_file(filename):
 
 ################################################################################
 
+
 def radssh_shell_main():
     args = sys.argv[1:]
     defaults = config.load_settings()
     # Keep command line options separately, for reuse in sshconfig defaults
-    cmdline_options = config.command_line_settings(args, defaults.get('user.settings'))
+    cmdline_options = config.command_line_settings(args, defaults.get("user.settings"))
     defaults.update(cmdline_options)
 
-    if 'socket.timeout' in defaults:
-        socket.setdefaulttimeout(float(defaults['socket.timeout']))
+    if "socket.timeout" in defaults:
+        socket.setdefaulttimeout(float(defaults["socket.timeout"]))
 
     # Setup Logging
-    logformat = '%(asctime)s %(levelname)-8s [%(name)s:%(thread)08X] %(message)s'
-    logdir = os.path.expanduser(time.strftime(defaults.get('logdir', '')))
+    logformat = "%(asctime)s %(levelname)-8s [%(name)s:%(thread)08X] %(message)s"
+    logdir = os.path.expanduser(time.strftime(defaults.get("logdir", "")))
     if logdir:
         if not os.path.exists(logdir):
             os.mkdir(logdir)
-        logging.basicConfig(filename=os.path.join(logdir, 'radssh.log'),
-                            format=logformat)
+        logging.basicConfig(
+            filename=os.path.join(logdir, "radssh.log"), format=logformat
+        )
     else:
         logging.basicConfig(format=logformat)
         pass
     try:
-        logging.getLogger().setLevel(getattr(logging, defaults['loglevel'].upper()))
+        logging.getLogger().setLevel(getattr(logging, defaults["loglevel"].upper()))
     except AttributeError:
-        raise RuntimeError('RadSSH setting "loglevel" should be set to one of [CRITICAL,ERROR,WARNING,INFO,DEBUG] instead of "%s"', defaults['loglevel'])
-    logger = logging.getLogger('radssh')
+        raise RuntimeError(
+            'RadSSH setting "loglevel" should be set to one of [CRITICAL,ERROR,WARNING,INFO,DEBUG] instead of "%s"',
+            defaults["loglevel"],
+        )
+    logger = logging.getLogger("radssh")
 
     # Make an AuthManager to handle user authentication
-    a = ssh.AuthManager(defaults['username'],
-                        auth_file=os.path.expanduser(defaults['authfile']),
-                        try_auth_none=(defaults['try_auth_none'] == 'on'))
+    a = ssh.AuthManager(
+        defaults["username"],
+        auth_file=os.path.expanduser(defaults["authfile"]),
+        try_auth_none=(defaults["try_auth_none"] == "on"),
+    )
 
     # Load Plugins to aid in host lookups and add *commands dynamically
     loaded_plugins = {}
     exe_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    system_plugin_dir = os.path.join(exe_dir, 'plugins')
-    disable_plugins = defaults['disable_plugins'].split(',')
-    plugin_dirs = [x for x in defaults['plugins'].split(';') if x]
+    system_plugin_dir = os.path.join(exe_dir, "plugins")
+    disable_plugins = defaults["disable_plugins"].split(",")
+    plugin_dirs = [x for x in defaults["plugins"].split(";") if x]
     plugin_dirs.append(system_plugin_dir)
 
     for x in plugin_dirs:
@@ -356,52 +388,74 @@ def radssh_shell_main():
         if not os.path.exists(plugin_dir):
             continue
         for module in sorted(os.listdir(plugin_dir)):
-            if module.endswith('.py') and not module.startswith('__'):
+            if module.endswith(".py") and not module.startswith("__"):
                 plugin = module[:-3]
                 # Skip modules found in more that 1 location, and ones explicitly disabled
                 if plugin in loaded_plugins or plugin in disable_plugins:
                     continue
                 try:
-                    logger.info('Loading plugin module: %s', plugin)
-                    this_plugin = radssh.plugins.load_plugin(os.path.join(plugin_dir, module))
-                    if hasattr(this_plugin, 'settings'):
-                        prefix = 'plugin.%s.' % plugin
+                    logger.info("Loading plugin module: %s", plugin)
+                    this_plugin = radssh.plugins.load_plugin(
+                        os.path.join(plugin_dir, module)
+                    )
+                    if hasattr(this_plugin, "settings"):
+                        prefix = "plugin.%s." % plugin
                         user_settings = {}
-                        user_settings = dict([(k[len(prefix):], v) for k, v in defaults.items() if k.startswith(prefix)])
-                        logger.info('Updating settings for plugin %s with: %s', plugin, user_settings)
+                        user_settings = dict(
+                            [
+                                (k[len(prefix) :], v)
+                                for k, v in defaults.items()
+                                if k.startswith(prefix)
+                            ]
+                        )
+                        logger.info(
+                            "Updating settings for plugin %s with: %s",
+                            plugin,
+                            user_settings,
+                        )
                         this_plugin.settings.update(user_settings)
-                    if hasattr(this_plugin, 'init'):
-                        logger.debug('Calling init method for plugin: %s', plugin)
-                        this_plugin.init(defaults=defaults, auth=a, plugins=loaded_plugins, star_commands=star.commands, shell=shell)
-                    if hasattr(this_plugin, 'star_commands'):
-                        logger.debug('Registering *commands for plugin: %s %s', plugin, this_plugin.star_commands.keys())
+                    if hasattr(this_plugin, "init"):
+                        logger.debug("Calling init method for plugin: %s", plugin)
+                        this_plugin.init(
+                            defaults=defaults,
+                            auth=a,
+                            plugins=loaded_plugins,
+                            star_commands=star.commands,
+                            shell=shell,
+                        )
+                    if hasattr(this_plugin, "star_commands"):
+                        logger.debug(
+                            "Registering *commands for plugin: %s %s",
+                            plugin,
+                            this_plugin.star_commands.keys(),
+                        )
                         star.commands.update(this_plugin.star_commands)
-                    if hasattr(this_plugin, 'command_listener'):
+                    if hasattr(this_plugin, "command_listener"):
                         command_listeners.append(this_plugin.command_listener)
                     loaded_plugins[plugin] = this_plugin
 
                 except Exception as e:
-                    logger.error('Failed to load plugin (%s): %s', plugin, repr(e))
+                    logger.error("Failed to load plugin (%s): %s", plugin, repr(e))
 
     # Use command line args as connect list, or give user option to supply list now
     if not args:
-        print('No command line arguments given.')
-        print('You can connect to a number of hosts by hostname or IP')
+        print("No command line arguments given.")
+        print("You can connect to a number of hosts by hostname or IP")
         if loaded_plugins:
-            print('You can also give symbolic names that can be translated by')
-            print('the following loaded plugins:')
+            print("You can also give symbolic names that can be translated by")
+            print("the following loaded plugins:")
             for module, plugin in loaded_plugins.items():
                 try:
                     lookup_doc = plugin.lookup.__doc__
                     print(module, plugin.__doc__)
-                    print('\t%s' % lookup_doc)
+                    print("\t%s" % lookup_doc)
                     try:
                         plugin.banner()
                     except AttributeError:
                         pass
                 except AttributeError:
                     pass
-        connect_list = input('Enter a list of connection destinations: ').split()
+        connect_list = input("Enter a list of connection destinations: ").split()
     else:
         connect_list = args
 
@@ -412,11 +466,11 @@ def radssh_shell_main():
     hosts = []
     for arg in connect_list:
         for helper, resolver in loaded_plugins.items():
-            if hasattr(resolver, 'lookup'):
+            if hasattr(resolver, "lookup"):
                 try:
                     cluster = resolver.lookup(arg)
                     if cluster:
-                        logger.debug('%s expanded by %s', arg, helper)
+                        logger.debug("%s expanded by %s", arg, helper)
                         for label, host, conn in cluster:
                             if conn:
                                 hosts.append((label, conn))
@@ -424,81 +478,88 @@ def radssh_shell_main():
                                 hosts.append((label, host))
                         break
                 except Exception as e:
-                    logger.error('Exception looking up %s via %s: %r', arg, helper, e)
+                    logger.error("Exception looking up %s via %s: %r", arg, helper, e)
                     cluster = None
         else:
             hosts.append((arg, None))
 
     # Almost done with all the preliminary setup steps...
-    if defaults['loglevel'] not in ('CRITICAL', 'ERROR'):
-        print('*** Parallel Shell ***')
-        print('Using AuthManager:', a)
-        print('Logging to %s' % logdir)
+    if defaults["loglevel"] not in ("CRITICAL", "ERROR"):
+        print("*** Parallel Shell ***")
+        print("Using AuthManager:", a)
+        print("Logging to %s" % logdir)
         pprint.pprint(defaults, indent=4)
         print()
         star.star_help()
 
     # Create a RadSSHConsole instance for screen output
-    job_buffer = int(defaults['stalled_job_buffer'])
-    console_name = defaults['shell.console']
+    job_buffer = int(defaults["stalled_job_buffer"])
+    console_name = defaults["shell.console"]
     console = None
-    if '.' in console_name:
+    if "." in console_name:
         # Try finding formatter as module.function from loaded plugins
-        logger.info('Attempting to load custom console formatter: %s', console_name)
-        module_name, function_name = console_name.split('.', 1)
+        logger.info("Attempting to load custom console formatter: %s", console_name)
+        module_name, function_name = console_name.split(".", 1)
         try:
             custom_formatter = getattr(loaded_plugins[module_name], function_name)
-            console = RadSSHConsole(formatter=custom_formatter, retain_recent=job_buffer)
+            console = RadSSHConsole(
+                formatter=custom_formatter, retain_recent=job_buffer
+            )
         except KeyError:
-            logger.error('Plugin not loaded for shell.console formatter %s', console_name)
+            logger.error(
+                "Plugin not loaded for shell.console formatter %s", console_name
+            )
         except AttributeError:
-            logger.error('Plugin formatter not found for shell.console formatter %s', console_name)
+            logger.error(
+                "Plugin formatter not found for shell.console formatter %s",
+                console_name,
+            )
         except Exception as e:
-            logger.error('Exception on console formatter %s: %r', console_name, e)
+            logger.error("Exception on console formatter %s: %r", console_name, e)
     # Fallback to a standard console if plugin provided one did not load
     if console is None:
-        if not sys.stdout.isatty() or console_name == 'monochrome':
+        if not sys.stdout.isatty() or console_name == "monochrome":
             console = RadSSHConsole(formatter=monochrome, retain_recent=job_buffer)
         else:
             console = RadSSHConsole(retain_recent=job_buffer)
 
     # Finally, we are able to create the Cluster
-    print('Connecting to %d hosts...' % len(hosts))
+    print("Connecting to %d hosts..." % len(hosts))
     cluster = ssh.Cluster(hosts, auth=a, console=console, defaults=defaults)
 
     ready, disabled, failed_auth, failed_connect, dropped = cluster.connection_summary()
-    if defaults['loglevel'] not in ('CRITICAL', 'ERROR'):
-        star.star_info(cluster, logdir, '', [])
+    if defaults["loglevel"] not in ("CRITICAL", "ERROR"):
+        star.star_info(cluster, logdir, "", [])
     else:
         # If cluster is not 100% connected, let user know even if loglevel is not low enough
         if any((failed_auth, failed_connect, dropped)):
-            print('There were problems connecting to some nodes:')
+            print("There were problems connecting to some nodes:")
             if failed_connect:
-                print('    %d nodes failed to connect' % failed_connect)
+                print("    %d nodes failed to connect" % failed_connect)
             if failed_auth:
-                print('    %d nodes failed authentication' % failed_auth)
+                print("    %d nodes failed authentication" % failed_auth)
             if dropped:
-                print('    %d dropped connections' % dropped)
+                print("    %d dropped connections" % dropped)
             print('    Use "*info" for connection details.')
 
     if ready == 1 and disabled + failed_auth + failed_connect + dropped == 0:
         # Cluster size of one - check if auto_tty is set
-        if defaults['auto_tty'] == 'on' and 'star_tty' in loaded_plugins:
-            print('Auto-invoking *tty for a cluster size of 1')
-            loaded_plugins['star_tty'].settings['prompt_delay'] = "0.0"
-            star.call(cluster, logdir, '*tty')
+        if defaults["auto_tty"] == "on" and "star_tty" in loaded_plugins:
+            print("Auto-invoking *tty for a cluster size of 1")
+            loaded_plugins["star_tty"].settings["prompt_delay"] = "0.0"
+            star.call(cluster, logdir, "*tty")
             # cluster.console.join()
             cluster.close_connections()
             raise SystemExit("Session complete")
 
     # Command line history support
-    if defaults.get('historyfile'):
-        histfile = os.path.expanduser(defaults['historyfile'])
+    if defaults.get("historyfile"):
+        histfile = os.path.expanduser(defaults["historyfile"])
         try:
             readline.read_history_file(histfile)
         except IOError:
             pass
-        readline.set_history_length(int(os.environ.get('HISTSIZE', 1000)))
+        readline.set_history_length(int(os.environ.get("HISTSIZE", 1000)))
         if sys.version_info.major == 2:
             # Workaround #32 - fix not backported to Python 2.X
             atexit.register(safe_write_history_file, histfile)
@@ -506,11 +567,12 @@ def radssh_shell_main():
             atexit.register(readline.write_history_file, histfile)
 
     # Add TAB completion for *commands and remote file paths
-    tab_completion = radssh_tab_handler(cluster, star)
+    # Handler is registered for side-effects; no variable needed
+    radssh_tab_handler(cluster, star)
 
     # With the cluster object, start interactive session
     shell(cluster=cluster, logdir=logdir, defaults=defaults)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     radssh_shell_main()
