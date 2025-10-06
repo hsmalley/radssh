@@ -29,21 +29,13 @@ import time
 import platform
 import threading
 
-import netaddr
 import radssh
-import paramiko
+import mitogen
 import re
 
 
 def _version_tuple_from_str(vstr: str) -> tuple[int, ...]:
-    """Return a simple numeric version tuple from a version string.
-
-    Examples:
-      '2.11.0' -> (2, 11, 0)
-      '2.0' -> (2, 0)
-      '2.0a1' -> (2, 0, 1)
-    Non-numeric parts are ignored after the numeric segments.
-    """
+    """Return a simple numeric version tuple from a version string."""
     if not vstr:
         return (0,)
     m = re.match(r"^(\d+)(?:\.(\d+))?(?:\.(\d+))?", vstr)
@@ -53,39 +45,15 @@ def _version_tuple_from_str(vstr: str) -> tuple[int, ...]:
     return tuple(parts)
 
 
-# Paramiko 2.0 switched dependency from PyCrypto to cryptography
-_paramiko_ver = getattr(paramiko, "__version__", None)
-if _version_tuple_from_str(_paramiko_ver) >= (2,):
-    try:
-        import cryptography as crypto_module  # type: ignore
-    except Exception:
-        # Fallback: if cryptography is not available, leave crypto_module unset
-        crypto_module = None  # type: ignore
-else:
-    try:
-        import Crypto as crypto_module  # type: ignore
-    except Exception:
-        crypto_module = None  # type: ignore
-
-
 def open_file(name):
-    """
-    Return an open file object.
-    """
+    """Return an open file object."""
     return open(name, "r")
 
 
 def start_thread(event):
-    """
-    Start a thread that waits on a given event, then terminates.
-    Used for determining how many threads can be successfully
-    started before Python or OS reaches an upper limit.
-    """
-
+    """Start a thread that waits on a given event, then terminates."""
     def dummy_thread(event):
-        """
-        Simply wait on event to keep thread active.
-        """
+        """Simply wait on event to keep thread active."""
         event.wait()
 
     t = threading.Thread(target=dummy_thread, args=(event,))
@@ -95,39 +63,21 @@ def start_thread(event):
 
 if __name__ == "__main__":
     print("RadSSH Runtime Information Report")
-    print("Package RadSSH %s from (%s)" % (radssh.version, radssh.__file__))
+    print(f"Package RadSSH {radssh.version} from ({radssh.__file__})")
     # Dependent modules - Print version and location
-    print("  Using Paramiko ", paramiko.__version__, "from", paramiko.__file__)
-    print(
-        "  Using",
-        crypto_module.__name__,
-        crypto_module.__version__,
-        "from",
-        crypto_module.__file__,
-    )
-    print("  Using netaddr", netaddr.__version__, "from", netaddr.__file__)
+    print(f"  Using Mitogen {mitogen.__version__} from {mitogen.__file__}")
     print()
 
     # Runtime environment info
-    print(
-        "Python %s (%s)" % (platform.python_version(), platform.python_implementation())
-    )
-    print("Running on", platform.system(), platform.release(), "[%s]" % platform.node())
+    print(f"Python {platform.python_version()} ({platform.python_implementation()})")
+    print(f"Running on {platform.system()} {platform.release()} [{platform.node()}]")
     if platform.system() == "Linux":
-        # Use distro if available for details, otherwise fallback to platform.platform
         try:
             import distro
-
-            print(
-                "  %s (%s)"
-                % (
-                    distro.linux_distribution()[0],
-                    "/".join([fld for fld in distro.linux_distribution()[1:] if fld]),
-                )
-            )
+            print(f"  {distro.linux_distribution()[0]} ({'/'.join([f for f in distro.linux_distribution()[1:] if f])})")
         except ImportError:
-            print("  %s" % platform.platform())
-    print("Encoding for stdout:", sys.stdout.encoding)
+            print(f"  {platform.platform()}")
+    print(f"Encoding for stdout: {sys.stdout.encoding}")
 
     # Test runtime limits of open files and threads
     print("\nChecking runtime limits...")
@@ -137,13 +87,13 @@ if __name__ == "__main__":
         for x in range(10000):
             lim.append(open_file(os.devnull))
     except Exception as e:
-        print("  System is able to open a maximum of %d concurrent files" % len(lim))
-        print("    Attempting to open file #%d reported (%s)" % (len(lim) + 1, repr(e)))
+        print(f"  System is able to open a maximum of {len(lim)} concurrent files")
+        print(f"    Attempting to open file #{len(lim) + 1} reported ({e!r})")
     else:
-        print("  System is able to open at least %d concurrent files" % len(lim))
+        print(f"  System is able to open at least {len(lim)} concurrent files")
     finally:
         t1 = time.time()
-        print("  File check completed in %f seconds\n" % (t1 - t0))
+        print(f"  File check completed in {t1 - t0} seconds\n")
         while lim:
             lim.pop().close()
     t0 = time.time()
@@ -152,16 +102,15 @@ if __name__ == "__main__":
         for x in range(10000):
             lim.append(start_thread(kill_threads))
     except Exception as e:
-        print("  System is able to run %d concurrent threads" % len(lim))
-        print(
-            "    Attempting to start thread #%d reported (%s)" % (len(lim) + 1, repr(e))
-        )
+        print(f"  System is able to run {len(lim)} concurrent threads")
+        print(f"    Attempting to start thread #{len(lim) + 1} reported ({e!r})")
     else:
-        print("  System is able to run %d concurrent threads" % len(lim))
+        print(f"  System is able to run {len(lim)} concurrent threads")
     finally:
         t1 = time.time()
-        print("  Thread check completed in %f seconds\n" % (t1 - t0))
+        print(f"  Thread check completed in {t1 - t0} seconds\n")
         kill_threads.set()
         while lim:
             lim.pop().join()
     print("End of runtime check")
+

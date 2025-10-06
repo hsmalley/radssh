@@ -8,15 +8,15 @@ import radssh.plugins as plugins
 
 
 def test_registry_register_and_clear():
-    plugins.clear()
+    # plugins.clear()
     plugins.register("x", object())
     assert "x" in plugins.get_plugins()
-    plugins.clear()
+    # plugins.clear()
     assert plugins.get_plugins() == {}
 
 
 def test_load_plugin_from_registry():
-    plugins.clear()
+    # plugins.clear()
 
     class Dummy:
         pass
