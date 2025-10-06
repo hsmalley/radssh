@@ -5,14 +5,11 @@ radssh.egg-info/
 radssh/plugins
 *.log
 *.pyc
-.git
 /tmp/
 *.tmp
 *.temp
 *~
 *.log
-genesis_*.log
-validation_*.log
 *.backup
 *.bak
 *.orig
@@ -29,8 +26,6 @@ coverage_output/
 *.swp
 *.swo
 .DS_Store
-genesis_compiled
-genesis.compiled.sh
 deployment_artifacts/
 *.deb
 *.rpm
