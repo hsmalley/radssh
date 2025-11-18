@@ -152,7 +152,7 @@ def run_local_command(original_name, remote_hostname, port, remote_username, ssh
             '%p': str(port),
             '%r': sshconfig.get('user', remote_username),
             '%u': os.getlogin(),
-            '%C': hashlib.sha1((
+            '%C': hashlib.sha256((
                 socket.gethostname()
                 + remote_hostname
                 + str(port)
