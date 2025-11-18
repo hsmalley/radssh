@@ -512,8 +512,8 @@ if __name__ == '__main__':
             for filter, password in sample.passwords:
                 if not filter:
                     filter = '(ALL)'
-                print('\t', repr(password), 'for hosts matching:', filter)
+                print('\t', '[REDACTED]', 'for hosts matching:', filter)
         else:
             print('No explicit passwords loaded')
         if sample.default_passwords:
-            print('Authfile includes a default password [%s]' % repr(sample.default_passwords))
+            print('Authfile includes a default password [REDACTED]')
